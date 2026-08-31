@@ -1709,6 +1709,153 @@ sola cosa, sería el logo: 352 KB a 17 KB, en todas las páginas, y es cambiar
 un archivo.
 
 
+### Qué se hizo — 31 de agosto
+
+Se hizo entero: el script, el componente, las variantes y el módulo de anchos.
+Pero la meta que este documento se puso estaba mal medida, y una de las contras
+se cumplió peor de lo que la escribí.
+
+**Lo que quedó puesto.** `scripts/optimizar-imagenes.mjs` genera 118 archivos
+—59 AVIF y 59 WebP— a partir de los 46 originales, y reescribe
+`src/lib/imagen-variantes.ts` con los anchos que realmente existen para cada
+foto. `src/components/ui/foto.tsx` emite el `<picture>`. No queda ni un uso de
+`next/image` en el sitio: las once páginas del build llevan `<source>` con
+`srcSet`.
+
+**La meta de «`out/` por debajo de 5 MB» no se cumplió, y era la métrica
+equivocada.** `out/` pesa 14 MB: 6.0 MB de originales, 3.3 MB de variantes y el
+resto entre HTML y bundles. Los originales siguen ahí porque son el respaldo
+del `<picture>`, que es justo lo que los hace innecesarios: ningún navegador de
+los últimos años baja el JPG, porque el AVIF o el WebP le sirven primero. Lo
+que importaba era el peso transferido por visita, no el peso de la carpeta
+publicada. Escribí una meta sobre lo segundo y por eso parece fallada cuando lo
+que se buscaba sí funcionó.
+
+**El logo salió mejor que el plan.** Decía «352 KB a 17 KB». El PNG de 360 KB
+sigue copiándose al build —es el respaldo—, pero la página pide
+`logo-unadeca-400.avif`, que pesa 9 KB.
+
+**La contra que sí golpeó: casi todas las fotos tienen una sola variante.** El
+script no amplía, por diseño, y la mayoría de los originales mide entre 375 y
+750 px. Resultado: de los diez hoteles, solo `hampton-inn` (1600 px) y
+`hotel-1915` (1024 px) dan material para las tres escalas; el resto se quedó en
+400w y nada más. En un teléfono con densidad 2 y `sizes="100vw"`, el navegador
+necesita unos 780 px y solo encuentra 400. Ahí la foto se ve más blanda que
+antes, cuando cargaba el JPG entero.
+
+No es un error del script: es la tarea 1.5 —pedir fotos en alta resolución—
+pasando la factura en el único lugar donde se nota. Mientras las fotos sigan
+midiendo 375 px, ninguna técnica de entrega las mejora. Conviene resolver 1.5
+antes de tocar nada más de esta sección.
+
+Verificado: `pnpm typecheck`, `pnpm lint` y `pnpm build` limpios, 15 páginas.
+
+---
+
+## 14. Endurecer la publicación (31 de agosto)
+
+### Qué pasaba
+
+El sitio ya estaba publicado en Netlify y el trabajo de tres semanas no tenía
+un solo commit. Cuatro cosas sueltas:
+
+1. **Sin historial.** El repositorio con commits estaba en la copia de
+   `~/Documents/desarrollo` —un único commit, el andamio de Create Next App— y
+   todo el trabajo real vivía sin versionar en `~/dev-local`. Ninguna de las
+   dos copias tenía el conjunto completo.
+2. **Sin cabeceras.** No había `netlify.toml` ni `_headers` en el repositorio;
+   el que aparece dentro de `.netlify/` lo genera el plugin en cada build y
+   está ignorado. El sitio salía sin CSP, sin `nosniff`, sin `Referrer-Policy`
+   y sin `frame-ancestors`: cualquier página ajena podía meterlo en un iframe.
+3. **`/comision` accesible.** Lleva `robots: { index: false, follow: false }`,
+   que solo le pide a los buscadores que no la listen. Cualquiera con el enlace
+   veía el desglose cotizado hotel por hotel. Es la decisión 3.1, que estaba
+   abierta desde el principio.
+4. **Un aviso de dependencia.** `postcss` arrastraba `nanoid` 3.3.17, con aviso
+   de severidad alta (GHSA-2v37-7h3g-55p8).
+
+### Qué se hizo — 31 de agosto
+
+**Historial unificado.** Se trajo el commit del andamio desde la copia de
+Documents a `~/dev-local` con `git fetch` y se apuntó `main` ahí, sin tocar el
+árbol de trabajo. Así el primer commit real queda como hijo del andamio y se
+ve exactamente qué cambió respecto de Create Next App: se borran los cinco SVG
+de ejemplo, `globals.css` se muda a `src/styles`, y entran los diez hoteles con
+sus fichas.
+
+**Cabeceras en `public/_headers`.** Va en `public/` porque el export copia esa
+carpeta tal cual a `out/`, que es lo que Netlify publica. Lleva CSP, `nosniff`,
+`Referrer-Policy`, `Permissions-Policy`, HSTS y `frame-ancestors 'none'`, más
+cache inmutable para `/opt/*` y `/_next/static/*`, que llevan el ancho o el
+hash en el nombre.
+
+**`/comision` deja de publicarse.** `scripts/quitar-comision.mjs` la borra de
+`out/` después de `next build`. Sigue disponible en local con `pnpm dev`, y
+`INCLUIR_COMISION=1 pnpm build` la publica a propósito. El script rompe el
+build si no encuentra nada que borrar: si Next cambia cómo nombra las rutas
+exportadas, es mejor fallar que publicarla en silencio.
+
+**`nanoid` parchado.** Un `overrides` que en pnpm 11 va en
+`pnpm-workspace.yaml`, no en `package.json` —puesto en `package.json` la
+instalación dice «Already up to date» y no resuelve nada, que fue lo que pasó
+en el primer intento—. `pnpm audit` queda limpio.
+
+### Cómo se verifica
+
+| Qué | Pasa si |
+|---|---|
+| Historial | `git log --oneline` muestra el andamio y los dos commits nuevos |
+| `/comision` fuera | `find out -name "*comision*"` no devuelve nada |
+| Sin rastro del nombre | `grep -rl comision out` no devuelve nada |
+| Cabeceras copiadas | `out/_headers` existe después del build |
+| Cabeceras aplicadas | `curl -sI` sobre el preview muestra la CSP |
+| Dependencias | `pnpm audit` dice «No known vulnerabilities found» |
+
+Los cinco primeros están verificados. El de `curl` no: hace falta un deploy de
+preview, y todavía no se hizo.
+
+### Las contras
+
+**La CSP lleva `'unsafe-inline'` en `script-src`, y eso no es menor.** El App
+Router inyecta scripts en línea para hidratar, y con export estático no hay
+servidor que genere nonces. Con `'unsafe-inline'`, la CSP deja de ser una
+defensa real contra XSS; sirven las demás directivas —`frame-ancestors`,
+`object-src`, `base-uri`, `form-action`—, que no son poco, pero conviene no
+creer que el sitio quedó blindado. En un sitio sin formularios ni entrada de
+usuario el riesgo de XSS es bajo de todos modos; la nota es para que nadie
+agregue un formulario asumiendo que la CSP lo cubre.
+
+**Quitar `/comision` del build la vuelve más incómoda de consultar.** Quien la
+necesite tiene que levantar el proyecto en local. Es el precio de que no esté
+expuesta, y me parece el correcto, pero es un cambio real en cómo se trabaja
+con ella. Si la comisión la necesita seguido, la respuesta no es volver a
+publicarla: es `INCLUIR_COMISION=1` en un deploy de preview con enlace privado.
+
+**El HSTS va sin `preload` a propósito.** Entrar a la lista de precarga es
+fácil y salir es lento, y el dominio definitivo todavía no está cerrado.
+
+**Borrar del `out/` es más frágil que no generar.** Lo correcto sería que la
+página no se exporte; el App Router con `output: "export"` no da una forma
+limpia de condicionar una ruta estática, así que se borra después. Por eso el
+script falla si no encuentra nada: es la única defensa contra que Next cambie
+los nombres y la página vuelva a colarse sin que nadie lo note.
+
+### Lo que queda abierto
+
+- **No hay remoto.** Los commits están solo en este disco. El repositorio tiene
+  que ser privado cuando se cree: publica tarifas de grupo negociadas y correos
+  directos de contactos comerciales.
+- **La copia de `~/Documents/desarrollo` sigue ahí**, once días atrasada en el
+  documento y tres en el código. Conviene borrarla para que nadie edite la
+  equivocada, pero eso se decide aparte.
+- **Las pruebas de la sección 12 siguen sin escribirse.** `calculos.ts` exporta
+  cuatro funciones de dinero sin una sola prueba, y es donde un error se
+  traduce en una cifra equivocada frente a un hotel.
+- **Dos cosas fuera del proyecto, en la máquina.** La carpeta personal es un
+  repositorio git con todo sin rastrear, y el token de git está en texto plano
+  en `~/.git-credentials` con `helper = store`. Ninguna de las dos se tocó
+  porque son destructivas y van confirmadas aparte.
+
 ---
 
 ## Contactos
