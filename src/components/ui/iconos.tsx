@@ -9,8 +9,9 @@ const base = "h-[1.15rem] w-[1.15rem] shrink-0";
  * sola («‹») se lee como «anterior» dentro de una serie, y acá el gesto es
  * salir de la ficha hacia la lista, no retroceder un elemento.
  *
- * `galeria.tsx` tiene su propia `Flecha` para anterior/siguiente dentro del
- * visor, que sí es navegar la serie. Son dos gestos distintos a propósito.
+ * `FlechaSerie`, más abajo, es la de anterior/siguiente dentro del visor de
+ * fotos, que sí es navegar la serie. Son dos gestos distintos a propósito, y
+ * por eso son dos iconos y no uno con una prop.
  */
 export function FlechaIzquierda({ className }: Props) {
   return (
@@ -191,6 +192,80 @@ export function WhatsApp({ className }: Props) {
       <path
         d="M9.1 8.2c.2-.5.5-.5.8-.5h.5c.2 0 .4 0 .6.5l.7 1.6c.1.2 0 .4-.1.5l-.4.5c-.1.2-.2.3 0 .6a6 6 0 0 0 2.6 2.3c.3.1.5.1.6 0l.5-.6c.2-.2.3-.2.5-.1l1.6.8c.2.1.4.2.4.4a1.8 1.8 0 0 1-1.2 1.7c-.5.2-1.2.3-3.3-.6a8.4 8.4 0 0 1-3.6-3.5c-.7-1.3-.7-2.2-.6-2.7a2 2 0 0 1 .4-.9Z"
         fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Anterior y siguiente dentro del visor de fotos: punta sola, sin asta.
+ *
+ * Es el gesto de moverse por una serie, no el de salir de ella — para eso
+ * está `FlechaIzquierda`, arriba, que lleva asta. La diferencia es
+ * deliberada: si las dos se vieran igual, «volver» y «anterior» se
+ * confundirían justo donde conviven.
+ *
+ * Vivía suelta en `galeria.tsx`. Se trajo acá para que los iconos estén todos
+ * en un lugar y el próximo se agregue donde corresponde.
+ */
+export function FlechaSerie({
+  hacia,
+  className,
+}: Props & { hacia: "izquierda" | "derecha" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className ?? "h-5 w-5"}>
+      <path
+        d={hacia === "izquierda" ? "M15 4 7 12l8 8" : "M9 4l8 8-8 8"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+/** Marco con montaña: «acá hay fotos». Abre el visor desde el mosaico. */
+export function IconoFotos({ className }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className ?? "h-4 w-4"}>
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+      <path
+        d="m3.5 17 5-5 4 4 3-2.5 5 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Visto de las listas de «qué incluye». Más chico que el resto y con
+ * `strokeLinecap="square"`: acompaña texto en párrafo, no encabeza una fila.
+ */
+export function Check({ className }: Props) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      className={className ?? "mt-1.5 h-3 w-3 shrink-0"}
+    >
+      <path
+        d="M2 8.5 6 12.5 14 3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="square"
       />
     </svg>
   );

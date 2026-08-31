@@ -33,6 +33,19 @@ export type Medios = {
   } | null;
 };
 
+/**
+ * Una foto de hotel: la ruta y su texto alternativo.
+ *
+ * Esta forma estaba escrita tres veces —en `Hotel.imagenes` sin nombre, y
+ * como `type Foto` dentro de `galeria.tsx`, donde chocaba de nombre con el
+ * componente `Foto` que ese mismo archivo importa—. Se llama `Imagen` y no
+ * `Foto` justamente para no volver a pisar al componente.
+ *
+ * El `alt` no es decorativo: es lo que se lee en voz alta y lo que aparece
+ * bajo la foto en el visor a pantalla completa.
+ */
+export type Imagen = { src: string; alt: string };
+
 /** Uno de los tres puntos de la franja intermedia. */
 export type PuntoClave = { titulo: string; texto: string };
 
@@ -137,7 +150,7 @@ export type Hotel = {
   servicios: string[];
   caracteristicas: Caracteristicas;
   habitaciones: Habitacion[];
-  imagenes: { src: string; alt: string }[];
+  imagenes: Imagen[];
   contacto?: Contacto;
   /** Datos que faltan o hay que confirmar con el hotel. */
   pendientes: string[];

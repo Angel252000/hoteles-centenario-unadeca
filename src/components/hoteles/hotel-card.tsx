@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Estrellas } from "@/components/ui/estrellas";
 import { Clima, Personas, Pin, Taza } from "@/components/ui/iconos";
 import { costoDosPersonas, dinero, niveles, type Hotel } from "@/lib/datos";
+import { Spec } from "@/components/ui/spec";
 
 const nivelPorId = new Map(niveles.map((n) => [n.id, n]));
 
@@ -16,21 +17,6 @@ const textoAire = {
 } as const;
 
 const icono = "h-4 w-4 shrink-0";
-
-function Spec({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-center gap-2 text-sm text-graphite">
-      <span className="text-mute">{icon}</span>
-      {children}
-    </li>
-  );
-}
 
 /** Ficha al estilo de las tarjetas de propiedad: precio primero, luego todo. */
 export function HotelCard({ hotel }: { hotel: Hotel }) {
@@ -149,13 +135,13 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
         </p>
 
         <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-line pt-5">
-          <Spec icon={<Personas className={icono} />}>
+          <Spec denso icono={<Personas className={icono} />}>
             {hotel.capacidad === null ? "Sin dato" : `${hotel.capacidad} pers.`}
           </Spec>
-          <Spec icon={<Taza className={icono} />}>
+          <Spec denso icono={<Taza className={icono} />}>
             {hotel.caracteristicas.desayunoIncluido ? "Desayuno" : "$6 aparte"}
           </Spec>
-          <Spec icon={<Clima className={icono} />}>
+          <Spec denso icono={<Clima className={icono} />}>
             {textoAire[hotel.caracteristicas.aire ?? "null"]}
           </Spec>
         </ul>

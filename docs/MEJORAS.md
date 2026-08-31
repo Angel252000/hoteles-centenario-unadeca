@@ -2097,6 +2097,214 @@ la única forma en que este cambio puede salir mal.
 
 ---
 
+## 16. Que el código se lea (31 de agosto)
+
+### Qué pasa hoy
+
+El código está mejor comentado que el promedio: los comentarios explican *por
+qué*, no *qué*, y los tipos vienen documentados. Eso no es lo que hay que
+arreglar. Lo que cuesta leer es otra cosa, y son siete puntos concretos.
+
+**1. `ARQUITECTURA.md` miente, y es el mapa.** Es el primer archivo que abre
+quien llega, y lo que dice ya no es cierto:
+
+| Dice | Es |
+|---|---|
+| `home/hero.tsx` | `home/portada.tsx` |
+| `ui/` tiene 2 archivos | Tiene 6 —faltan `foto`, `estrellas`, `espacio-pendiente`, `observador-reveal`— |
+| `home/` tiene 3 archivos | Tiene 5 —faltan `carrusel-centenario`, `puntos-video`— |
+| `lib/` tiene `imagen-tamanos` | También tiene `imagen-variantes` |
+| No existen `scripts/` ni `deploy/` | Existen, con seis archivos entre los dos |
+| Para regenerar tamaños, un bloque de `sips` de doce líneas | `pnpm build:imagenes` |
+| Publicar: arrastrar `out/` a `app.netlify.com/drop` | Netlify ya no existe para este proyecto |
+
+Un mapa equivocado es peor que no tener mapa: quien busca `hero.tsx` no lo
+encuentra y no sabe si se renombró, se borró, o está mirando mal.
+
+**2. `HotelPage` es una función de 417 líneas.** De la 85 a la 502, todo el
+JSX de la ficha en línea: galería, cabecera, descripción, tabla de tarifas,
+reservas y «otros hoteles». Tiene secciones claras —hay `<h2>` que las
+separan— pero ninguna tiene nombre, así que para cambiar la tabla de tarifas
+hay que barrer el archivo buscando dónde empieza.
+
+**3. `galeria.tsx` tiene 432 líneas y hace dos cosas.** El mosaico de la ficha
+y el visor a pantalla completa. El visor se llevó además toda la lógica de
+teclado, trampa de foco, bloqueo de scroll y precarga que se agregó hoy. Son
+dos componentes con ciclos de vida distintos conviviendo en un archivo.
+
+**4. `Spec` está definido dos veces**, en `hotel-card.tsx` y en la ficha, con
+el mismo nombre, la misma idea y diferencias que no son intencionales: uno
+recibe `icon` y el otro `icono`, uno usa `gap-2` y el otro `gap-2.5`, y el
+`text-sm` está en distinto elemento. Dos cosas casi iguales con el mismo
+nombre es peor que dos cosas distintas: quien edita una cree que arregló las
+dos.
+
+**5. `icon` es la única palabra en inglés del código.** Todo lo demás está en
+castellano —`icono`, `hoteles`, `costoEstadia`, `anchoNativo`—. Una sola
+excepción obliga a recordar cuál era.
+
+**6. `Foto` es dos cosas en el mismo archivo.** `galeria.tsx` importa el
+componente `Foto` y en la línea siguiente exporta `type Foto`. TypeScript lo
+permite porque valores y tipos viven en espacios separados, pero al leer
+`fotos: Foto[]` hay que saber esa regla para no pensar que es un arreglo de
+componentes.
+
+**7. Los iconos están a medias.** Once viven en `ui/iconos.tsx`; tres andan
+sueltos: `Flecha` e `IconoFotos` en `galeria.tsx`, `Check` en la ficha. La
+regla existe pero no se aplicó entera, y eso es peor que no tener regla,
+porque el próximo icono se agrega donde caiga.
+
+### Cómo se hace
+
+1. **Reescribir `ARQUITECTURA.md` desde el árbol real**, incluidos `scripts/`
+   y `deploy/`, con los comandos que existen hoy y la publicación a servidor
+   propio.
+2. **Partir `HotelPage` en las secciones que ya tiene**, como componentes con
+   nombre en `components/hoteles/`. El `page.tsx` queda ensamblando, igual que
+   hace la portada — que es el patrón que el propio `ARQUITECTURA.md` declara
+   y que la ficha nunca siguió.
+3. **Separar `galeria.tsx`** en el mosaico y el visor.
+4. **Un solo `Spec`**, en `ui/`, con prop `icono`.
+5. **Mover `Flecha`, `IconoFotos` y `Check`** a `ui/iconos.tsx`.
+6. **Renombrar el tipo `Foto`** y llevarlo a `lib/datos/tipos.ts`, que es
+   donde viven las formas de los datos.
+
+### Cómo se verifica
+
+| Qué | Pasa si |
+|---|---|
+| Nada se rompió | `pnpm typecheck`, `pnpm lint` y `pnpm build` limpios, 15 páginas |
+| El HTML es el mismo | El `out/` de antes y el de después no difieren salvo en los hashes de los bundles |
+| El mapa es cierto | Cada archivo que `ARQUITECTURA.md` nombra existe, y cada archivo de `src/` está nombrado |
+| No quedó `Spec` duplicado | `grep -rn "function Spec" src/` devuelve una sola línea |
+
+La segunda es la que de verdad prueba que un refactor no cambió nada, y es
+barata: se guarda el `out/` actual antes de empezar y se compara al final.
+
+### Las contras
+
+**Partir archivos puede empeorar la lectura, no mejorarla.** Una función de
+417 líneas que se lee de arriba abajo a veces es más fácil que cinco archivos
+entre los que hay que saltar. El corte solo vale si sigue las divisiones que
+la página ya tiene —las que marcan los `<h2>`— y no unas inventadas para que
+los archivos queden parejos. Si al final hay que abrir cuatro archivos para
+entender una pantalla, salió mal.
+
+**Es churn sobre un proyecto que todavía se está rediseñando.** Es la misma
+tensión de la sección 12: mover código que aún se mueve genera conflictos y
+diffs grandes sin agregar nada visible. Lo que lo justifica es que la ficha ya
+está estable —no cambia desde el 26 de agosto— y que el mapa equivocado cuesta
+en cada sesión.
+
+**Y esto se hace sin una sola prueba.** Toda la verificación es `typecheck`,
+`lint` y mirar. Un refactor de este tamaño es exactamente el momento donde una
+suite de pruebas paga sola, y la sección 12 sigue sin hacerse. La comparación
+del `out/` es un sustituto pobre pero real: detecta cambios en el HTML
+generado, que es lo que ve el visitante. No detecta que la trampa de foco dejó
+de funcionar.
+
+**Renombrar el tipo `Foto` toca todo lo que lo consume.** Es el cambio con más
+superficie y el de menos beneficio visible. Se hace igual porque el costo es
+de una vez y la confusión es permanente.
+
+
+### Qué se hizo — 31 de agosto
+
+Los siete puntos. Un archivo más de lo previsto, un cambio visual mínimo que
+no estaba en el plan, y la verificación salió mejor de lo que esperaba.
+
+**El mapa vuelve a ser cierto.** `ARQUITECTURA.md` se reescribió desde el árbol
+real y ahora se comprueba sola: de los 39 archivos de `src/`, `scripts/` y
+`deploy/`, los 39 están nombrados, y el único nombre que menciona sin que
+exista es `hero.tsx`, dentro de la nota que explica por qué el mapa se había
+roto. Se le agregó arriba el aviso de mantenerlo.
+
+**La ficha pasó de 474 líneas a 120.** Se partió en las secciones que ya tenía:
+
+| Archivo | Líneas |
+|---|---|
+| `encabezado-hotel.tsx` | 158 |
+| `tabla-tarifas.tsx` | 111 |
+| `panel-reservas.tsx` | 106 |
+| `otros-hoteles.tsx` | 60 |
+| `page.tsx` (ensambla) | 120 |
+
+El corte siguió los `<h2>` que la página ya usaba, no divisiones inventadas
+para emparejar tamaños. `page.tsx` ahora se lee de un vistazo.
+
+**La galería se partió en dos.** `galeria.tsx` (176) es el mosaico; el visor a
+pantalla completa se fue a `visor-fotos.tsx` (292) con todo lo suyo: teclado,
+trampa de foco, bloqueo de scroll, gestos y precarga.
+
+**Un archivo que el plan no mencionaba: `ui/spec.tsx`.** Estaba planeado
+unificar los dos `Spec`, pero no que el resultado viviera en `ui/`. Ahí
+corresponde: no tiene nada de hoteles.
+
+**La diferencia entre los dos `Spec` ahora tiene nombre.** Eran casi iguales
+—`gap-2` contra `gap-2.5`, y el `text-sm` en distinto elemento— sin que nada
+dijera si era a propósito. En vez de elegir uno y perder el otro, la
+diferencia es una prop: `denso`, que usa la parrilla.
+
+**`nivelDe` se fue a `calculos.ts`.** Era un `Map` suelto en la ficha. Ahora
+está al lado del resto de lo que se deriva de los datos, y lo usan dos
+componentes.
+
+**El tipo repetido resultó estar tres veces, no dos.** El plan hablaba del
+choque entre `type Foto` y el componente `Foto` dentro de `galeria.tsx`. Al
+buscar consumidores apareció que `Hotel.imagenes` declaraba la misma forma sin
+nombre. Ahora es `Imagen` en `tipos.ts`, usada en los tres lugares. Se llama
+`Imagen` y no `Foto` justamente para no volver a pisar al componente.
+
+**Los tres iconos sueltos se mudaron a `ui/iconos.tsx`.** `Flecha` se llama
+ahora `FlechaSerie`, y el comentario de `FlechaIzquierda` —que ya explicaba
+por qué son dos iconos distintos y no uno con una prop— se actualizó para
+apuntar a su vecina en vez de a otro archivo.
+
+**`CLAUDE.md` ganó una sección de reglas técnicas** con lo que un agente no
+puede adivinar: que no se usa `next/image`, que no hay librería de animación,
+que `/comision` no se publica, que los iconos van todos en un archivo y que el
+sitio ya no está en Netlify. También se corrigió el bloque de verificación:
+decía `npx serve`, que en esta máquina falla sin dar error.
+
+### Que no cambió nada: la comprobación
+
+Se guardó el `out/` de antes y se comparó contra el de después. El `diff` a
+secas no sirve —cambian los hashes de los bundles y con ellos todo el HTML—,
+así que se comparó normalizando: sin `<script>`, sin comentarios, sin
+etiquetas, con los espacios colapsados.
+
+**El texto visible es idéntico en las 13 páginas.** Los atributos `alt`,
+`aria-label`, `aria-modal` y `href` tampoco cambiaron: mismo conjunto, mismas
+cantidades.
+
+Las diferencias que quedan en el HTML son tres, y ninguna se ve:
+
+1. **Orden de clases**: `gap-2.5 text-graphite` pasó a `text-graphite gap-2.5`.
+2. **Espaciado del JSX**: `{" "}` seguido de `— texto` se escribió como
+   `" — texto"`. Renderiza igual; cambia dónde caen los separadores de React.
+3. **Un `<span>` de más por cada `Spec` de la parrilla**, con el `text-sm` que
+   antes iba en el `<li>`. Es el único cambio deliberado en el DOM, y es el
+   precio de tener un solo componente en vez de dos casi iguales.
+
+Verificado además: `pnpm typecheck`, `pnpm lint`, `pnpm build` (15 páginas) y
+`pnpm audit`, todos limpios.
+
+### Lo que quedó abierto
+
+**Sigue sin haber una sola prueba.** Es lo que dije en las contras y no cambió:
+la comparación del `out/` demuestra que el HTML generado es el mismo, y eso es
+bastante, pero no demuestra que la trampa de foco siga atrapando ni que el
+visor siga cerrando con Escape. Eso vive en JavaScript que ninguna comparación
+de HTML toca. Es la sección 12, que ya lleva dos secciones citándose sin
+hacerse.
+
+**Y sigue sin abrirse en un navegador**, por lo mismo de la sección 15: la
+extensión de Chrome no está conectada y el Chromium de Playwright no está
+instalado.
+
+
+---
+
 ## Contactos
 
 | Hotel | Contacto |

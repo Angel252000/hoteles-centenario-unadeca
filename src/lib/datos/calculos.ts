@@ -1,7 +1,7 @@
 /** Cálculos derivados de las tarifas. No contienen datos: solo los operan. */
 
-import { evento } from "./contenido";
-import type { Habitacion, Hotel } from "./tipos";
+import { evento, niveles } from "./contenido";
+import type { Habitacion, Hotel, Nivel } from "./tipos";
 
 /**
  * Lo que cuesta una tarifa por toda la estadía, en su propia unidad.
@@ -81,3 +81,17 @@ export function dinero(valor: number): string {
   }).format(valor);
 }
 
+
+/*
+  Buscar el nivel de un hotel.
+
+  El `Map` se arma una vez al cargar el módulo, no en cada render. Estaba
+  duplicado como constante suelta en la ficha de detalle; acá vive al lado del
+  resto de lo que se deriva de los datos, que es lo que es.
+*/
+const porId = new Map(niveles.map((n) => [n.id, n]));
+
+/** El nivel de un hotel, o `undefined` si su `nivel` no existe en `niveles`. */
+export function nivelDe(hotel: Hotel): Nivel | undefined {
+  return porId.get(hotel.nivel);
+}

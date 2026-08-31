@@ -24,6 +24,31 @@ Todo el contenido vive en `src/lib/datos/contenido.ts`. Para cambiar textos, pre
 se edita ese archivo — no se tocan los componentes. Los datos se importan siempre desde
 `@/lib/datos`, nunca de los archivos internos de esa carpeta.
 
+## Reglas técnicas que no son obvias
+
+**No se usa `next/image`.** El export estático apaga el optimizador de imágenes, y sin él
+`<Image>` escribe un `<img src>` pelado: el teléfono se baja el mismo archivo que el
+escritorio. Las fotos van por `src/components/ui/foto.tsx`, que emite un `<picture>` con
+AVIF y WebP. Las variantes se generan a mano con `pnpm build:imagenes` y se versionan en
+`public/opt`. **Foto nueva sin correr ese comando = se sirve el JPG original.**
+
+**No hay librería de animación.** framer-motion se sacó el 31 de agosto de 2026: se usaba
+para una aparición de 14 px y costaba 38 KB comprimidos. Hoy `ui/reveal.tsx` marca el bloque,
+`globals.css` tiene la transición y `ui/observador-reveal.tsx` monta un solo
+`IntersectionObserver` para toda la página. `prefers-reduced-motion` se resuelve en CSS.
+
+**`/comision` no se publica.** `pnpm build` la borra de `out/` (`scripts/quitar-comision.mjs`).
+Se ve con `pnpm dev`; para publicarla a propósito, `INCLUIR_COMISION=1 pnpm build`.
+
+**Todos los iconos van en `ui/iconos.tsx`.** Sin excepciones.
+
+**El sitio ya no está en Netlify.** Se sirve desde servidor propio; la configuración está en
+`deploy/`. `pnpm build` deja los `.br` y `.gz` precomprimidos, y el servidor tiene que estar
+configurado para servirlos: sin eso la portada pesa 189 KB en vez de 10.8 KB.
+
+Estructura completa del proyecto: `docs/ARQUITECTURA.md`. Registro de decisiones, con las
+autocríticas de cada una: `docs/MEJORAS.md`.
+
 ## Cómo se muestran los precios
 
 Desde el 26 de agosto de 2026 el precio grande **no es por persona por noche**. Son las
@@ -147,14 +172,20 @@ no copiar su `DESIGN.md` a la raíz: sustituiría la dirección editorial ya def
 El binario está en `~/.npm-global/bin` (ya en el PATH de `~/.zshrc`).
 
 ```bash
-pnpm build                          # regenera out/
-npx serve out -l 4321               # servidor estático
-playwright-cli open http://localhost:4321
+pnpm build                                          # regenera out/
+python3 -m http.server 4321 --directory out         # servidor estático
+playwright-cli open http://127.0.0.1:4321
 playwright-cli screenshot --full-page
-playwright-cli resize 390 844       # revisar móvil
+playwright-cli resize 390 844                       # revisar móvil
 ```
 
 Los screenshots caen en `.playwright-cli/`. Regla: **ningún cambio visual se da por hecho
 sin screenshot antes/después**, desktop (1440) y móvil (390).
 
-`.playwright-cli/` y `.claude/` no deberían commitearse — verificar `.gitignore`.
+Dos cosas que se rompen seguido acá:
+
+- **El Chromium de Playwright puede no estar instalado.** Si `playwright-cli open` dice
+  `Browser "chromium" is not installed`, hace falta `playwright-cli install-browser chromium`.
+- **`npx serve` falló en esta máquina sin dar error.** `python3 -m http.server` anda.
+
+`.playwright-cli/` y `.claude/` ya están en `.gitignore`.
