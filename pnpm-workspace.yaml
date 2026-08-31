@@ -1,3 +1,10 @@
 allowBuilds:
   sharp: false
   unrs-resolver: false
+
+# `postcss` arrastra nanoid 3.3.17, con aviso de severidad alta
+# (GHSA-2v37-7h3g-55p8). Solo corre en el build, nunca llega al navegador,
+# pero el arreglo es una línea. Se puede quitar cuando next y
+# @tailwindcss/postcss suban su postcss por su cuenta.
+overrides:
+  nanoid: ^3.3.18
