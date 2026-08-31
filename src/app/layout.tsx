@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Jost } from "next/font/google";
 import "@/styles/globals.css";
+import { ObservadorReveal } from "@/components/ui/observador-reveal";
 
 /** Títulos y cifras: geométrica, de trazo parejo y caja alta ancha. */
 const jost = Jost({
@@ -36,9 +37,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         {/*
-          framer-motion escribe el estado inicial —opacidad 0— en el HTML que
-          genera el servidor. Sin JavaScript nadie lo revierte y las fichas no
-          se verían nunca. El contenido manda sobre la animación.
+          `globals.css` deja los `[data-reveal]` en opacidad 0, y es el observador
+          —JavaScript— el que los muestra. Sin JavaScript nadie los revierte y
+          las fichas no se verían nunca. El contenido manda sobre la animación.
         */}
         <noscript>
           <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
         {children}
+        <ObservadorReveal />
       </body>
     </html>
   );

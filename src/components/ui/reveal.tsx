@@ -1,17 +1,18 @@
-"use client";
-
-import { motion, useReducedMotion } from "framer-motion";
-
 /**
  * Entrada al entrar en pantalla: sube unos píxeles y aparece.
  *
- * Es lo único del sitio que necesita JavaScript, así que se mantiene mínimo:
- * recibe el contenido ya renderizado en el servidor como `children`, de modo
- * que las fichas siguen siendo componentes de servidor y no viajan sus datos
- * al navegador.
+ * Esto es un componente de servidor: no manda ni un byte de JavaScript por
+ * cada ficha. Solo escribe `data-reveal` y el retraso; el estado inicial y la
+ * transición viven en `globals.css`, y un único observador para toda la
+ * página —`<ObservadorReveal>`, montado en el layout— es el que va marcando
+ * los elementos como vistos.
  *
- * El recorrido es corto (14px) y la curva es la misma del resto del sitio:
- * la idea es que la parrilla se asiente, no que haga una entrada.
+ * Antes esto lo hacía framer-motion. Se cambió porque la librería completa
+ * pesaba unos 180 KB comprimidos para hacer una aparición de 14 px que en CSS
+ * son cuatro líneas. Ver la sección 15 de `docs/MEJORAS.md`.
+ *
+ * `prefers-reduced-motion` se atiende en CSS, no acá: quien pidió menos
+ * movimiento ve el contenido de una, aunque el JavaScript nunca cargue.
  */
 export function Reveal({
   children,
@@ -20,38 +21,16 @@ export function Reveal({
 }: {
   children: React.ReactNode;
   className?: string;
+  /** Segundos. Sirve para escalonar una fila de fichas. */
   delay?: number;
 }) {
-  const sinMovimiento = useReducedMotion();
-
-  // Quien pidió menos movimiento recibe el contenido tal cual, sin envoltorio
-  // animado ni estado inicial invisible.
-  if (sinMovimiento) return <div className={className}>{children}</div>;
-
   return (
-    <motion.div
-      className={className}
+    <div
       data-reveal
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{
-        // No se repite al volver a subir.
-        once: true,
-        /*
-          Márgenes asimétricos, y el de arriba es enorme a propósito.
-
-          Con un margen simétrico, saltar al pie de la página —un ancla, Cmd+↓,
-          o el navegador restaurando el scroll— deja atrás elementos que el
-          observador nunca vio: con `once` se quedan invisibles para siempre.
-          Extender el borde superior del root hace que todo lo que ya quedó
-          arriba cuente como visible y aparezca de una. Abajo se mantiene el
-          -60px, que es lo que adelanta la entrada al acercarse.
-        */
-        margin: "9999px 0px -60px 0px",
-      }}
-      transition={{ duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

@@ -1,0 +1,93 @@
+# Apache — usar solo si el hosting no deja elegir. Ver deploy/README.md.
+#
+# Se copia como `.htaccess` a la raíz del sitio (/var/www/hoteles/.htaccess).
+# Necesita mod_headers, mod_deflate, mod_rewrite y mod_expires activos.
+#
+# Es el único de los tres donde servir un archivo ya comprimido hay que
+# explicárselo a mano, y por eso es el más fácil de dejar mal.
+
+# --- Servir los .br y .gz que dejó el build ---------------------------------
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# Brotli, si el navegador lo acepta y el archivo existe.
+	RewriteCond %{HTTP:Accept-Encoding} br
+	RewriteCond %{REQUEST_FILENAME}.br -f
+	RewriteRule ^(.*)$ $1.br [QSA,L]
+
+	# Si no, gzip.
+	RewriteCond %{HTTP:Accept-Encoding} gzip
+	RewriteCond %{REQUEST_FILENAME}.gz -f
+	RewriteRule ^(.*)$ $1.gz [QSA,L]
+
+	# Sin extensión: /hoteles/tucan sirve /hoteles/tucan.html
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteCond %{REQUEST_FILENAME}.html -f
+	RewriteRule ^(.*)$ $1.html [QSA,L]
+</IfModule>
+
+# El archivo servido es .html.br, pero el navegador tiene que recibirlo como
+# HTML comprimido, no como un archivo `.br` para descargar. Sin esto la
+# reescritura de arriba rompe el sitio en vez de acelerarlo.
+<FilesMatch "\.html\.br$">
+	ForceType text/html
+	Header set Content-Encoding br
+</FilesMatch>
+<FilesMatch "\.css\.br$">
+	ForceType text/css
+	Header set Content-Encoding br
+</FilesMatch>
+<FilesMatch "\.js\.br$">
+	ForceType application/javascript
+	Header set Content-Encoding br
+</FilesMatch>
+<FilesMatch "\.html\.gz$">
+	ForceType text/html
+	Header set Content-Encoding gzip
+</FilesMatch>
+<FilesMatch "\.css\.gz$">
+	ForceType text/css
+	Header set Content-Encoding gzip
+</FilesMatch>
+<FilesMatch "\.js\.gz$">
+	ForceType application/javascript
+	Header set Content-Encoding gzip
+</FilesMatch>
+
+# Un proxy en el camino tiene que saber que la respuesta cambia según el
+# Accept-Encoding, o le sirve el Brotli a alguien que no lo entiende.
+<IfModule mod_headers.c>
+	Header append Vary Accept-Encoding
+</IfModule>
+
+# --- Cabeceras -------------------------------------------------------------
+<IfModule mod_headers.c>
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set Referrer-Policy "strict-origin-when-cross-origin"
+	Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+	Header always set Cross-Origin-Opener-Policy "same-origin"
+	Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	# `frame-ancestors 'none'` es lo que impide que otro sitio enmarque este.
+	# El `'unsafe-inline'` de `script-src` no se puede quitar: son 165 scripts
+	# en línea distintos entre las trece páginas, la carga de React. Ver la
+	# sección 15 de docs/MEJORAS.md.
+	Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'"
+</IfModule>
+
+# --- Cache -----------------------------------------------------------------
+# El ancho o el hash van en el nombre: contenido nuevo, URL nueva.
+<IfModule mod_headers.c>
+	<FilesMatch "\.(avif|webp|jpg|png|woff2)$">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+	<FilesMatch "\.html$">
+		Header set Cache-Control "public, max-age=0, must-revalidate"
+	</FilesMatch>
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+# No anunciar la versión de Apache. Va en la configuración del servidor, no
+# acá: `ServerTokens Prod` y `ServerSignature Off` en apache2.conf.
+Options -Indexes

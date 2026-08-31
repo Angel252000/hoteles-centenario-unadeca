@@ -1858,6 +1858,245 @@ los nombres y la página vuelva a colarse sin que nadie lo note.
 
 ---
 
+## 15. Fuera de Netlify, a servidor propio (31 de agosto)
+
+### Qué pasa hoy
+
+El sitio se sale de Netlify. El proyecto de allá ya se borró —no quedan datos,
+ni deploys, ni la URL `golden-frangollo-4a84b8.netlify.app`— y el destino es un
+servidor propio, todavía sin definir cuál ni cómo se sube.
+
+Eso cambia el problema. Netlify hacía tres cosas gratis que ahora hay que hacer
+a mano, y si no se hacen el sitio queda **más lento y más caro en datos** que
+antes de mudarse:
+
+1. **Comprimía con Brotli.** No es un detalle: la portada pesa 189 KB en crudo
+   y 10.8 KB con Brotli. Un servidor sin compresión sirve los 189 KB.
+2. **Servía por HTTP/2 desde un CDN.** Ahora la latencia es la del servidor,
+   una sola ubicación.
+3. **Ponía cabeceras de cache y TLS al día** sin que nadie las escribiera.
+
+Lo segundo no se compensa. Lo primero y lo tercero sí, y son la mayor parte
+del beneficio.
+
+### Lo que de verdad cuesta datos móviles
+
+Medido sobre el build actual, primera visita a la portada, con Brotli:
+
+| Recurso | Crudo | Comprimido |
+|---|---|---|
+| `index.html` | 189 KB | **10.8 KB** |
+| JavaScript (9 chunks) | 697 KB | **~180 KB** |
+| CSS | 35 KB | **8 KB** |
+| Fuentes (2 de 7 subconjuntos) | — | **60 KB** |
+| Fotos | según la ficha | — |
+
+El HTML pesa 189 KB en crudo porque Next inserta la carga de React —230
+`<script>` en línea, 474 KB entre todas las páginas— pero comprime 18 a 1, así
+que **no es el problema**. El problema es el JavaScript: 180 KB comprimidos,
+el 70% de la visita, en un sitio cuya única interacción es un visor de fotos y
+una aparición al hacer scroll.
+
+### Cómo se hace
+
+**1. Precomprimir en el build.** Un script que, terminado `next build`, escribe
+`.br` y `.gz` al lado de cada HTML, CSS, JS, SVG y JSON de `out/`. Los tres
+servidores saben servir el archivo ya comprimido sin gastar CPU por visita
+(`brotli_static` en nginx, `precompressed` en Caddy, `mod_rewrite` en Apache).
+Comprimir una vez al publicar sale mejor que comprimir en cada pedido.
+
+**2. Configuración para los tres servidores.** Como el servidor todavía no está
+elegido, se dejan `deploy/nginx.conf`, `deploy/Caddyfile` y
+`deploy/apache.htaccess`, los tres con las mismas cabeceras que hoy tiene
+`public/_headers`, más TLS, HTTP/2 y cache. Con una nota de cuál conviene: para
+un sitio estático de una persona, **Caddy**, porque saca HTTPS y renovación de
+certificados sin configuración, que es justo donde se rompen estas cosas.
+
+`public/_headers` y `netlify.toml` se retiran: eran formato de Netlify y ya no
+los lee nadie.
+
+**3. Quitar framer-motion.** Se usa en un solo lugar —`Reveal`, una aparición
+de 14 px al entrar en pantalla— y arrastra una librería de animación completa.
+Se reemplaza por `IntersectionObserver` más una transición CSS: unas veinte
+líneas que hacen exactamente lo mismo, incluido el `prefers-reduced-motion` y
+el margen superior gigante que ya está documentado en el componente.
+
+**4. La CSP se queda con `'unsafe-inline'`, y conviene decir por qué.** La idea
+obvia es reemplazarlo por hashes de los scripts en línea. No sirve acá: hay
+**165 hashes distintos** entre las trece páginas, porque cada una lleva su
+propia carga de React en línea. La cabecera resultante pesaría más que el HTML.
+Externalizar esos 230 scripts a archivos tampoco: serían 230 pedidos más.
+
+La respuesta honesta es que un export estático de App Router no puede tener una
+CSP fuerte contra XSS, y que en este sitio eso importa poco —no hay formularios,
+ni login, ni entrada de usuario, ni contenido de terceros: todo el texto sale de
+`contenido.ts` en el build—. Las otras directivas (`frame-ancestors`,
+`object-src`, `base-uri`, `form-action`) sí funcionan y son las que evitan que
+alguien enmarque o secuestre la página. Queda anotado para que nadie agregue un
+formulario creyendo que la CSP lo cubre.
+
+**5. Interacción del visor de fotos.** Está bien resuelto —Escape, flechas, el
+foco vuelve a la miniatura, `aria-modal`, portal para escapar del apilamiento—
+pero le faltan cuatro cosas:
+
+- **Trampa de foco.** Con `aria-modal="true"` el lector de pantalla se limita
+  al visor, pero el tabulador no: sigue recorriendo los enlaces de la página de
+  atrás, que están tapados. Para quien navega con teclado, el foco desaparece.
+- **Deslizar en el teléfono.** El visor solo se mueve con los botones. En un
+  teléfono, deslizar es el gesto que la gente prueba primero.
+- **El bloqueo de scroll no aguanta iOS.** `body.style.overflow = "hidden"` no
+  alcanza en Safari de iPhone: la página de atrás se sigue moviendo y al cerrar
+  el visor queda en otra posición.
+- **La foto siguiente se descarga al pedirla.** Precargar la contigua hace que
+  el paso se sienta inmediato. Cuesta un pedido y ahorra la espera.
+
+**6. `robots.txt`.** No hay. Conviene uno explícito que además liste el sitemap
+cuando exista.
+
+**7. `images.qualities` en `next.config.ts` está muerto.** Era para
+`next/image`, que ya no se usa desde la sección 13.
+
+### Cómo se verifica
+
+| Qué | Pasa si |
+|---|---|
+| Precompresión | Existe `out/index.html.br` y pesa menos de 15 KB |
+| Sin framer | `grep -r framer-motion src/` no devuelve nada y el JS baja |
+| La aparición sigue | Al bajar por la parrilla las fichas aparecen; con «reducir movimiento» activo, no |
+| Trampa de foco | Con el visor abierto, tabular en círculo no sale de él |
+| Deslizar | En teléfono, deslizar cambia de foto |
+| iOS | Abrir el visor, cerrar: la página quedó donde estaba |
+| Cabeceras | `curl -sI` contra el servidor nuevo muestra la CSP |
+
+### Las contras
+
+**Salir de Netlify empeora la entrega si el servidor queda mal configurado.**
+Es el riesgo central de todo esto y no depende del código. Netlify comprimía,
+cacheaba y servía desde el borde sin que nadie escribiera una línea. Un nginx
+por defecto no comprime nada. El sitio puede terminar sirviendo 189 KB donde
+antes servía 10.8 KB —diecisiete veces más datos móviles— y nadie se daría
+cuenta mirando la pantalla, porque se ve igual. Por eso la precompresión y las
+configuraciones van en el repositorio y no en la cabeza de nadie.
+
+**Escribir la aparición a mano es asumir mantenimiento.** framer-motion tiene
+resueltos casos que este reemplazo no: interrupciones a mitad de animación,
+elementos que entran y salen, listas que se reordenan. Nada de eso pasa acá —es
+una aparición única, con `once`— pero si mañana alguien quiere una animación de
+verdad, va a tener que traer la librería de vuelta o pelear con CSS. Se cambia
+flexibilidad futura por 180 KB hoy, y para un sitio que se mira una vez antes
+de reservar, el intercambio está claro.
+
+**Tres configuraciones de servidor es más de lo necesario.** Dos van a quedar
+sin usar y sin probar, y una configuración sin probar envejece mal. Se hace así
+porque el servidor todavía no está elegido; en cuanto se decida, conviene
+borrar las otras dos en vez de dejarlas ahí pudriéndose.
+
+**La trampa de foco es código sutil que se rompe callado.** Si alguien agrega
+un botón al visor y la trampa no lo contempla, nadie lo nota salvo quien navega
+con teclado. La alternativa —el elemento `<dialog>` nativo, que trae la trampa
+y el `inert` de fondo gratis— obligaría a rehacer el visor completo, incluido
+el portal y el apilamiento que costó entender. Se queda la trampa a mano, con
+el comentario que explica por qué existe.
+
+**Nada de esto arregla las fotos de 375 px.** Sigue siendo el cuello de botella
+real de la sección 13, y es contenido, no código.
+
+
+### Qué se hizo — 31 de agosto
+
+Salió todo lo planeado. Dos cosas cambiaron de forma respecto del plan y una
+métrica quedó peor medida de lo que la escribí.
+
+**El proyecto de Netlify se borró.** No tenía dominio propio ni alias, solo la
+URL de cortesía, así que no arrastró nada: la lista de proyectos quedó vacía y
+`golden-frangollo-4a84b8.netlify.app` responde 404. Del repositorio salieron
+`netlify.toml`, `public/_headers` y la carpeta `.netlify/`.
+
+**La precompresión funciona mejor de lo esperado.** `scripts/precomprimir.mjs`
+procesa 60 archivos y los baja de 2956 KB a 438 KB con Brotli: **85% menos**.
+La portada sola pasa de 189 KB a 10.8 KB.
+
+**framer-motion afuera.** `Reveal` pasó a ser componente de servidor: escribe
+`data-reveal` y el retraso, nada más. El estado inicial y la transición viven
+en `globals.css`, y un único `IntersectionObserver` en el layout
+—`ObservadorReveal`— va marcando los elementos. El `rootMargin` de
+`9999px 0px -60px 0px` se trasladó igual, con su explicación.
+
+Un cambio respecto del plan que salió mejor: **`prefers-reduced-motion` se
+resolvió en CSS, no en JavaScript**. Antes lo consultaba el componente con
+`useReducedMotion`; ahora es una regla de medios. Quien pidió menos movimiento
+ve el contenido de una aunque el JavaScript nunca cargue, que es un caso que la
+versión con framer no cubría.
+
+**La galería ganó las cuatro cosas.** Trampa de foco que consulta el DOM en
+cada pulsación —así un control nuevo entra solo—; deslizar con umbral de 50 px;
+bloqueo de scroll con `position: fixed` y `top` negativo, que es lo que sí
+detiene a Safari de iPhone; y precarga de la foto siguiente.
+
+Dos detalles que el plan no anticipó y que importan:
+
+- **La precarga se monta en el DOM, no con `new Image()`.** `<Foto>` emite un
+  `<picture>`: pedirla a mano habría bajado el JPG original, el archivo más
+  pesado de todos, justo lo contrario de lo que se buscaba. Montada de verdad,
+  el navegador negocia AVIF o WebP igual que con la visible.
+- **La precarga respeta «ahorro de datos».** Con `saveData` activo o en una red
+  2G no se precarga nada. Son datos que se gastan por una foto que quizá nadie
+  mire, y el pedido explícito acá era no gastar datos móviles de más.
+
+**La devolución del foco se movió a la limpieza del efecto.** Antes `cerrar()`
+enfocaba la miniatura de una. Con el `body` en `position: fixed` eso mandaba la
+página a otro lado: ahora la limpieza restaura el scroll primero y recién
+después enfoca, con `preventScroll`.
+
+**Tres configuraciones de servidor en `deploy/`**, más un README con el número
+que importa y cómo comprobarlo con `curl`. La recomendación es Caddy.
+
+### Lo que costó
+
+| | Antes | Ahora |
+|---|---|---|
+| JavaScript crudo | 697 KB | 596 KB |
+| JavaScript comprimido (gzip) | 210 KB | 172 KB |
+| Primera visita a la portada (Brotli) | — | **226 KB** |
+
+Ese total se reparte en 149 KB de JavaScript, 60 KB de fuentes, 10.6 KB de
+HTML y 7 KB de CSS, más las fotos de cada ficha.
+
+**La comparación de arriba está medida con dos varas y hay que decirlo.** El
+«antes» es gzip porque es lo que medí primero; el «ahora» en Brotli da 149 KB.
+Contra gzip y gzip, quitar framer-motion ahorró 38 KB —un 18%—, no los 180 KB
+que sugería el plan. Ese número era el peso de la librería entera y no todo
+viajaba: el resto es React, que sigue ahí. El ahorro es real pero es la mitad
+de lo que anuncié.
+
+**El JavaScript sigue siendo el 66% de la visita.** 149 KB de los 226, en un
+sitio cuya interacción es un visor de fotos. Lo que queda es React y la carga
+de hidratación de App Router, y sacarlos no es una optimización sino cambiar de
+herramienta. No se hizo y no creo que valga la pena por ahora, pero conviene
+que esté escrito: la próxima ganancia grande de este sitio no está en el
+código, está en no usar React para servir folletos.
+
+### Lo que quedó sin verificar
+
+La aparición al hacer scroll y el visor de fotos **no se probaron en un
+navegador de verdad**: la extensión de Chrome no está conectada y el Chromium
+de Playwright no está instalado en la máquina. Lo que sí está comprobado es que
+las piezas llegaron al build y en el orden correcto:
+
+- `[data-reveal]{opacity:0}` está en el CSS publicado, y
+  `[data-reveal=visible]{opacity:1}` viene **después**, así que gana.
+- La regla de `prefers-reduced-motion` viene última de las tres.
+- El `<noscript>` que fuerza `opacity: 1` sigue en el HTML.
+- El `rootMargin` del observador está en el bundle publicado.
+- Las 24 marcas `data-reveal` y sus `transition-delay` están en la portada.
+
+Falta abrir la página y mirar. Es lo primero que hay que hacer antes de
+publicar: si el observador fallara, el contenido quedaría invisible, y esa es
+la única forma en que este cambio puede salir mal.
+
+
+---
+
 ## Contactos
 
 | Hotel | Contacto |

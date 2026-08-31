@@ -1,0 +1,7 @@
+# El sitio es un catálogo público de hoteles para el Centenario UNADECA 2027.
+# Todo lo que se publica se puede indexar; lo que no debe verse —la página de
+# la comisión— directamente no se publica, así que no hace falta nombrarla
+# acá: listarla en un `Disallow` sería anunciar que existe.
+
+User-agent: *
+Allow: /

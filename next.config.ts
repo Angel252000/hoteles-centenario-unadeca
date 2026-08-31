@@ -4,10 +4,11 @@ const nextConfig: NextConfig = {
   // Sitio estático: `pnpm build` deja HTML/CSS/JS listos en `out/`.
   output: "export",
   images: {
-    // El export estático no lleva servidor de optimización de imágenes.
+    // El export estático no lleva servidor de optimización de imágenes. Desde
+    // la sección 13 el sitio ya no usa `next/image` —las fotos van por
+    // `<picture>` en `src/components/ui/foto.tsx`—, así que esto solo queda
+    // como red por si alguien vuelve a importarlo por descuido.
     unoptimized: true,
-    // Calidades que usan la galería (90) y el visor a pantalla completa (95).
-    qualities: [75, 90, 95],
   },
 };
 

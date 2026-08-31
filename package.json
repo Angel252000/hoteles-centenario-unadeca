@@ -4,14 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/quitar-comision.mjs",
+    "build": "next build && node scripts/quitar-comision.mjs && node scripts/precomprimir.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "build:imagenes": "node scripts/optimizar-imagenes.mjs"
   },
   "dependencies": {
-    "framer-motion": "^13.1.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
