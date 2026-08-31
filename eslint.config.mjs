@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // La copia que el CLI de Netlify deja al publicar. Es el mismo JavaScript
+    // minificado de `out/`, y sin esta línea el lint lo revisa y devuelve
+    // miles de avisos sobre código que nadie escribió.
+    ".netlify/**",
   ]),
 ]);
 

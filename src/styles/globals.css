@@ -1,0 +1,437 @@
+@import "tailwindcss";
+
+/*
+  Design system — paleta Centenario UNADECA 2027.
+  Dirección: editorial académica / azul marino y oro, sobre papel blanco.
+  Los cinco tonos de marca (oro, crema, azul, marino claro, marino oscuro) son
+  los que llegaron en el tablero de marca; lo demás son tintes derivados de
+  esos mismos cinco para texto y líneas, calibrados por contraste WCAG —ver
+  cada bloque abajo—, no colores inventados aparte.
+
+  26 de agosto: el papel pasó de la crema del tablero (#fce5b4) a blanco. La
+  crema del tablero ya no es superficie, pero el resto de la paleta no se
+  movió: los acentos y los textos son los mismos, y todos GANAN contraste al
+  aclararse el fondo —blanco es más claro que la crema—, así que ningún par
+  empeoró. Los ratios de abajo están recalculados sobre blanco.
+
+  Lo que sí hubo que rehacer son los dos tintes que eran crema mezclada con
+  oro —`bone-dim` y `line`—: sobre blanco leían como manchas amarillentas sin
+  nada que las contuviera. Ahora son neutros fríos, emparentados con `ink` en
+  vez de con un oro que ya no está en el fondo.
+*/
+
+@theme {
+  /*
+    Surfaces — papel blanco, marino más oscuro del tablero para tinta.
+    Ojo con `bone`: cumple DOS papeles opuestos y por eso vale blanco en los
+    dos. Es la superficie (`body`, `.ficha`) y es además la tinta clara que se
+    escribe SOBRE marino —`text-bone` en el hero, el header, los badges de
+    `hotel-card` y los botones del visor de `galeria`—, donde da 17.4:1.
+  */
+  --color-bone: #ffffff;
+  --color-bone-dim: #f2f4f7;
+  --color-ink: #001841;
+  --color-ink-soft: #1e3160;
+
+  /*
+    Text — `graphite` reutiliza el marino claro del tablero (1e3160): mismo
+    valor que `ink-soft`, a propósito. El texto sobre papel y la superficie
+    oscura nunca se mezclan en este sitio —graphite no se escribe sobre
+    ink-soft—, así que comparten tono sin perder contraste en ningún lado
+    (12.81:1 sobre `bone` blanco; era 10.22:1 sobre la crema).
+    `mute` da 6.61:1 sobre blanco. `mute-invert` es el gris cálido para texto
+    secundario sobre marino: 7.35:1 sobre `ink` — sigue siendo el único gris
+    tibio que queda, y ahí adentro funciona, porque el marino es cálido de
+    abajo, no la superficie de papel.
+  */
+  --color-graphite: #1e3160;
+  --color-mute: #565e75;
+  --color-mute-invert: #b0a892;
+
+  /*
+    Accent — oro del tablero, reservado para CTAs, precios y reglas.
+    El oro de marca (`#bca35e`) da 2.13:1 sobre el papel blanco: sigue sin
+    servir como texto en papel, igual que no servía sobre la crema. `brass` es
+    ese mismo oro oscurecido en luminosidad —mismo matiz, no mezclado con otro
+    color— y sobre blanco da 6.77:1 (eran 5.36:1 sobre la crema).
+    `brass-bright` es el oro de marca tal cual llega, sin tocar: sobre `ink`
+    da 7.07:1, así que SOLO va sobre tinta. Con el papel blanco es el que
+    carga el acento en el pie de página.
+  */
+  --color-brass: #6c5b2d;
+  --color-brass-bright: #bca35e;
+
+  /*
+    Segundo acento — cobalto, el azul del tablero. Antes solo vivía como línea
+    sobre tinta: en las secciones de papel —la mayoría del sitio— el oro no
+    tenía con qué combinar, y un acento solo en seis colores de marca lee como
+    paleta a medias, no como paleta combinada.
+
+    Reparto por función, no por gusto: el oro sigue siendo dinero y marca
+    —precios, CTA, eyebrows, el punto de «Hospedaje.»—; el cobalto es
+    interacción y detalle —íconos, hover de enlaces, chips secundarios,
+    bordes de foco—. Cada uno con su propio par, igual que brass/brass-bright:
+    `cobalt` es el azul de marca tal cual, para íconos y bordes —elementos no
+    textuales, WCAG 1.4.11 pide 3:1 y da 5.19:1 sobre blanco—. `cobalt-deep`
+    es ese mismo azul oscurecido en luminosidad —mismo matiz, mismo método que
+    `brass`— para cualquier lugar donde el azul sea texto: 9.06:1 sobre
+    blanco (eran 7.31:1 sobre la crema).
+  */
+  --color-cobalt: #2d73aa;
+  --color-cobalt-deep: #1e4c71;
+
+  /*
+    Dos pesos de línea sobre papel, más el cobalto como línea sobre tinta:
+    `line` es la hairline decorativa; `line-strong` es la única válida para el
+    borde de un control interactivo, 3.31:1 sobre blanco (WCAG 1.4.11 pide
+    3:1). `line-invert` reusa `cobalt` para separar sobre tinta sin
+    confundirse con `ink-soft`.
+
+    Las dos eran crema mezclada con oro (`#e6ce96` y `#847955`): calculadas
+    para vivir dentro del papel crema, sobre blanco quedaban amarillentas y
+    sueltas. Ahora son neutros fríos derivados de `ink`. Al elegir
+    `line-strong` el primer candidato (`#8b95a6`) daba 3.02:1 —pasa, pero al
+    filo—, así que se oscureció hasta 3.31:1: un borde de control no debería
+    aprobar por dos centésimas.
+  */
+  --color-line: #e3e7ee;
+  --color-line-strong: #848ea0;
+  --color-line-invert: var(--color-cobalt);
+
+  --font-display: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+
+  /*
+    Sombras — tintadas de marino (no negro puro), en capas: una dura y chica
+    más un desenfoque ancho y bajo. El RGB es el de `--color-ink` (0 24 65).
+  */
+  --shadow-lift:
+    0 1px 2px -1px rgb(0 24 65 / 0.12), 0 4px 12px -4px rgb(0 24 65 / 0.1);
+  --shadow-raise:
+    0 2px 4px -2px rgb(0 24 65 / 0.14), 0 12px 28px -8px rgb(0 24 65 / 0.18);
+  --shadow-plate: 0 24px 60px -24px rgb(0 24 65 / 0.4);
+
+  /* Motion — 150–300ms, meaningful only */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-bone);
+    color: var(--color-graphite);
+    font-family: var(--font-sans);
+    /* Kerning y ligaduras: soportadas por ambas fuentes, a diferencia de los
+       sets estilísticos que traíamos antes y que ninguna de las dos define. */
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures contextual;
+    letter-spacing: 0.004em;
+  }
+
+  /*
+    Grano de papel. Es lo que separa un fondo plano de una superficie impresa
+    —sin él, un color sólido lee como pantalla, no como papel—.
+
+    El blend cambió dos veces y conviene entender por qué, para no volver a
+    girar en círculo:
+
+    - `multiply` solo oscurece. Sobre el marino casi negro no tiene nada que
+      oscurecer y desaparece.
+    - `overlay` oscurece lo claro y aclara lo oscuro, así que servía para las
+      dos superficies. Por eso se eligió con el papel crema (18 de agosto).
+    - Pero overlay hace `multiply` bajo 0.5 y `screen` encima, y
+      `screen(1, x) = 1`: sobre blanco puro es una operación NULA. Al pasar el
+      papel a blanco (26 de agosto), overlay habría borrado el grano de todas
+      las secciones claras — justo las que son la mayor parte del sitio.
+
+    Con papel blanco no hay un solo blend que sirva para las dos superficies.
+    Se eligió `multiply`, que recupera el grano en el papel y lo pierde en los
+    bloques marinos (hero, header, pie). Es una pérdida asumida: esos bloques
+    ya tienen fotos, el degradé de marca o masa de color que los sostiene, y
+    el papel es donde de verdad se notaba lo plano.
+
+    Si el marino plano llega a molestar, la salida NO es volver a overlay
+    —volvería a apagar el papel—: es un segundo pseudo-elemento con `overlay`
+    aplicado solo a los contenedores oscuros.
+  */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.7;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  }
+
+  /* El contenido queda por encima del grano. */
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Visible, branded focus ring everywhere — never removed */
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-bone);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    /* La geométrica necesita algo de peso para no verse endeble en título. */
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Toda cifra se alinea en columna: precios, capacidades, conteos. */
+  :is(td, th, dd, .tabular-nums) {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /*
+    Escala de display. El tracking se aprieta según sube el tamaño —
+    una geométrica puesta a 6rem con el tracking de un párrafo se ve suelta.
+  */
+  .display-xl {
+    font-size: clamp(2.75rem, 7.5vw, 6.5rem);
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    /* El tamaño enorme aguanta menos peso y gana en elegancia. */
+    font-weight: 400;
+  }
+
+  .display-lg {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+
+  .display-md {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.12;
+    letter-spacing: -0.022em;
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    /* Compensa el hueco que el tracking deja colgando al final de la línea. */
+    margin-right: -0.2em;
+  }
+
+  /* Copy largo: medida corta y aire entre líneas, como en revista. */
+  .prosa {
+    max-width: 62ch;
+    line-height: 1.7;
+  }
+
+  .rule {
+    height: 1px;
+    background-color: var(--color-line);
+  }
+
+  /*
+    La misma hairline, para cuando va sobre tinta. `line` es un neutro frío
+    calculado contra el papel blanco: sobre marino se pierde. `line-invert`
+    —el cobalto— da 3.36:1 sobre `ink`, que es lo que separa el bloque de
+    cierre del pie sin encender una línea dorada que competiría con el punto
+    de «Hospedaje».
+  */
+  .rule-invert {
+    height: 1px;
+    background-color: var(--color-line-invert);
+  }
+
+  /*
+    Superficie base de las fichas. El realce en hover es de 2px: suficiente
+    para leerse como respuesta, no tanto como para que la parrilla salte.
+  */
+  .ficha {
+    background-color: var(--color-bone);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-lift);
+    transition:
+      box-shadow 0.25s var(--ease-out-soft),
+      border-color 0.25s var(--ease-out-soft),
+      transform 0.25s var(--ease-out-soft);
+  }
+
+  .ficha:hover {
+    border-color: var(--color-line-strong);
+    box-shadow: var(--shadow-raise);
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ficha,
+    .ficha:hover {
+      transition: none;
+      transform: none;
+    }
+  }
+
+  /*
+    El sexto tono del tablero de marca: azul a marino. Único uso fijo del
+    degradé —no se repite en botones ni chips, que quedarían fuera de la regla
+    de «un acento a la vez»—. Sirve de fondo a los bloques que todavía no
+    tienen foto ni video real: el marcador `EspacioPendiente` se ve de marca
+    en vez de un simple recuadro vacío, y cuando llegue el archivo real queda
+    tapado del todo por `object-cover`, así que no hay que quitarlo.
+
+    Radial y apagado a propósito, no la diagonal a todo color del primer
+    intento: azul de marca a máxima saturación de esquina a esquina leía como
+    botón o ícono de app —brilloso—, no como tela ni piedra. Acá el azul solo
+    asoma como un resplandor corto en una esquina —`color-mix` lo apaga a 55%
+    antes de empezar— y para la mitad del panel ya es `ink` liso, con el grano
+    de papel encima rompiendo lo que quede de superficie lisa.
+  */
+  .fondo-degradado-marca {
+    background-image: radial-gradient(
+      130% 95% at 12% 10%,
+      color-mix(in srgb, var(--color-line-invert) 55%, var(--color-ink) 45%)
+        0%,
+      var(--color-ink) 55%
+    );
+  }
+
+  /*
+    Acá vivía `.carrusel-mascara`, que desvanecía los dos bordes de la cinta
+    para decir «hay más tarjetas para ese lado». Se eliminó el 26 de agosto,
+    cuando el carrusel pasó a diapositivas de ancho completo: sobre tarjetas
+    de 22rem la máscara era una pista, sobre una foto a pantalla completa
+    apagaría los costados de cada imagen todo el tiempo. Sin usos, sin clase.
+  */
+}
+
+/* Entrance motion, disabled for reduced-motion users */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .rise {
+    animation: rise 0.7s var(--ease-out-soft) both;
+  }
+
+  /*
+    Cinta del carrusel — ver el comentario en `carrusel-centenario.tsx` sobre
+    por qué las diapositivas están duplicadas en el DOM. `-50%` es exactamente
+    el ancho de una tanda: al llegar ahí, la segunda tanda ocupa el lugar
+    exacto donde arrancó la primera, sin salto.
+
+    El visor pasa a `overflow: hidden` acá adentro, no en su clase base: de
+    base es desplazable a mano (ver el componente), y solo cuando la cinta
+    también gana su animación tiene sentido cortarle el scroll propio — las
+    dos moviendo la fila a la vez se ve entrecortado.
+  */
+  .carrusel-viewport {
+    overflow-x: hidden;
+  }
+
+  /*
+    Pase discreto: cada foto se queda quieta y después avanza. NO es un
+    desplazamiento continuo, y el cambio fue por lo que se vio en pantalla.
+
+    Con tarjetas de 22rem, una cinta que avanzaba sin parar funcionaba: las
+    costuras entre tarjetas se leían como la separación normal de una fila. A
+    ancho completo esa misma cinta deja una costura vertical partiendo la
+    banda casi todo el tiempo —entrás al sitio y ves media foto y media
+    foto—, porque el único instante en que una diapositiva está entera es el
+    que dura un parpadeo entre dos avances.
+
+    La cinta tiene doce diapositivas (seis, dos veces — ver el componente),
+    así que una diapositiva es 100/12 = 8.3333% del ancho total, y las seis
+    de una tanda son el -50% de siempre.
+
+    Cada diapositiva se lleva un sexto del tiempo (16.667%): se queda quieta
+    13.33% y avanza en los 3.33% restantes. A 42s eso es unos 5.6 segundos
+    quieta y 1.4 de movimiento. El `animation-timing-function` va DENTRO de
+    los keyframes porque en CSS la curva declarada en un keyframe gobierna el
+    tramo que arranca ahí: así el avance usa la curva del sitio y el reposo no
+    tiene curva que aplicar.
+  */
+  @keyframes carrusel-cinta {
+    0%,
+    13.33% {
+      transform: translateX(0);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    16.67%,
+    30% {
+      transform: translateX(-8.3333%);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    33.33%,
+    46.67% {
+      transform: translateX(-16.6667%);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    50%,
+    63.33% {
+      transform: translateX(-25%);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    66.67%,
+    80% {
+      transform: translateX(-33.3333%);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    83.33%,
+    96.67% {
+      transform: translateX(-41.6667%);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .carrusel-cinta {
+    width: max-content;
+    animation: carrusel-cinta 42s infinite;
+  }
+
+  /*
+    El hover/foco/toque se escuchan en el visor, no en la cinta: es el visor
+    el que tiene `tabIndex` y el que ocupa toda el área visible —la cinta es
+    más ancha que su pantalla, `:hover` sobre ella sola no cubriría los
+    bordes recortados—. Por eso el combinador: se pausa la cinta (hija)
+    cuando el visor (padre) está en alguno de los tres estados.
+  */
+  .carrusel-viewport:hover .carrusel-cinta,
+  .carrusel-viewport:focus-within .carrusel-cinta,
+  .carrusel-viewport:active .carrusel-cinta {
+    animation-play-state: paused;
+  }
+}
