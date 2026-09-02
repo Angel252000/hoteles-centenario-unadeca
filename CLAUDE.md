@@ -187,5 +187,11 @@ Dos cosas que se rompen seguido acá:
 - **El Chromium de Playwright puede no estar instalado.** Si `playwright-cli open` dice
   `Browser "chromium" is not installed`, hace falta `playwright-cli install-browser chromium`.
 - **`npx serve` falló en esta máquina sin dar error.** `python3 -m http.server` anda.
+- **Una captura de página completa sale con franjas en blanco si no se hizo scroll antes.**
+  Los bloques `[data-reveal]` arrancan en opacidad 0 y solo los revela el
+  `IntersectionObserver` cuando entran al viewport. Una captura `--full-page` sobre una página
+  recién cargada fotografía invisible todo lo que está bajo el pliegue. Hay que recorrer la
+  página primero, **con pausas de unos 400ms**: un scroll más rápido que eso le gana al
+  observador y deja bloques sin revelar, que se confunde fácil con un bug del sitio.
 
 `.playwright-cli/` y `.claude/` ya están en `.gitignore`.

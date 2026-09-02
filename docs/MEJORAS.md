@@ -2303,6 +2303,47 @@ extensión de Chrome no está conectada y el Chromium de Playwright no está
 instalado.
 
 
+
+### Verificado en navegador — 2 de septiembre
+
+Las secciones 15 y 16 quedaron cerradas sin abrir la página. Se instaló el Chromium de
+Playwright y se comprobó todo lo que estaba en duda. **Nada falló.**
+
+**La aparición al hacer scroll**: 11 de 11 bloques pasan a opacidad 1, tanto a 1440 como a
+390. El estado inicial en 0 es correcto —son todos bloques bajo el pliegue— y el observador
+los va marcando al entrar.
+
+**El visor de fotos**, medido paso a paso a partir de `scrollY = 399`:
+
+| Qué | Resultado |
+|---|---|
+| Abre con `aria-modal="true"` | sí |
+| Bloqueo de scroll | `body` en `position: fixed`, `top: -399px` — coincide con el scroll |
+| Foco inicial | en «Volver», dentro del diálogo |
+| Trampa de foco | 5 pulsaciones reales de Tab sobre 3 elementos: el foco nunca sale |
+| Flechas | `ArrowRight` pasa de «1 / 9» a «2 / 9» |
+| Escape | cierra |
+| Al salir | `body` vuelve a `static`, `scrollY` vuelve a 399 |
+| Devolución del foco | vuelve a la miniatura, con su `aria-label` |
+
+**El contraste de la sección 15 de la crítica, medido en vivo**: el degradado renderiza
+`color(srgb 0.0970588 0.290392 0.481373)` —o sea `#194a7b`— y el texto `rgb(176, 168, 146)`,
+que es `mute-invert`. Da **3.84:1** contra el 4.5:1 que pide AA. Confirmado sobre la página,
+no solo calculado.
+
+**Dos cosas que aprendimos verificando:**
+
+1. **Una captura `--full-page` sin scroll previo sale con franjas en blanco.** Lo que nunca
+   entró al viewport sigue en opacidad 0 y se fotografía invisible. Anotado en `CLAUDE.md`.
+2. **Un scroll de más de 400ms por paso le gana al observador.** Recorriendo la página a
+   120ms por salto quedaron 3 de 11 revelados, y eso se confunde fácil con un bug del sitio.
+   No lo es.
+
+**Un dato para la sección de la comparación**: a 390 px la portada mide **10 590 px de
+alto**. Comparar el primer hotel con el último son unos 8 000 px de scroll, y el sitio se
+reparte por WhatsApp. Es el argumento más concreto a favor de resolver la comparación.
+
+
 ---
 
 ## Contactos
