@@ -121,6 +121,15 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
           <span className="text-xs leading-none text-mute">
             4 noches · 2 personas
           </span>
+          {/*
+            Cuatro de los diez hoteles cotizan sin impuestos. Sin esta marca la
+            parrilla muestra diez cifras que parecen equivalentes y cuatro de
+            ellas suben al pagar. Va en tono neutro, no de alarma: el hotel no
+            hace nada malo, solo cotiza distinto.
+          */}
+          {hotel.impuestos === "aparte" && (
+            <span className="text-xs leading-none text-mute">+ impuestos</span>
+          )}
         </p>
 
         {dosPersonas && (

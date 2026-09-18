@@ -140,6 +140,7 @@ export const hoteles: Hotel[] = [
     clima: "Solo ventiladores, sin aire acondicionado",
     acceso: "Gradas, sin elevador",
     servicios: ["Camas individuales y matrimoniales", "Posible transporte"],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "no",
       elevador: false,
@@ -194,6 +195,7 @@ export const hoteles: Hotel[] = [
       "Camarotes y camas normales",
       "Privadas sencillas, triples y cuádruples",
     ],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
       elevador: true,
@@ -268,6 +270,7 @@ export const hoteles: Hotel[] = [
       "Camas individuales y matrimoniales",
       "Restaurante propio",
     ],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
       elevador: false,
@@ -325,6 +328,7 @@ export const hoteles: Hotel[] = [
       "Baño privado en todas",
       "Salón para 30 personas",
     ],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "parcial",
       elevador: false,
@@ -388,6 +392,7 @@ export const hoteles: Hotel[] = [
       "Parqueo para 4–5 carros",
       "Área de descanso y piscina pequeña",
     ],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
       elevador: null,
@@ -481,6 +486,7 @@ export const hoteles: Hotel[] = [
     clima: "Ventilador o aire acondicionado, según la habitación",
     acceso: "Gradas, sin elevador",
     servicios: ["Parqueo para 4 vehículos", "Patio interior y sala de estar"],
+    impuestos: "incluidos",
     caracteristicas: {
       aire: "parcial",
       elevador: false,
@@ -565,6 +571,9 @@ export const hoteles: Hotel[] = [
       "Servicio de fotocopiado y fax nacional e internacional",
       "Cajas de seguridad",
     ],
+    impuestos: "aparte",
+    impuestosNota:
+      "La hoja de tarifas dice «mas impuestos», sin detallar el porcentaje",
     caracteristicas: {
       // El correo no menciona el clima ni el elevador, y las fotos no alcanzan
       // para afirmarlo: queda sin dato hasta que el hotel lo confirme.
@@ -678,6 +687,9 @@ export const hoteles: Hotel[] = [
       "Más de 3.000 espacios de parqueo techado gratuito, con carga para vehículos eléctricos",
       "Restaurante con chef en sitio",
     ],
+    impuestos: "aparte",
+    impuestosNota:
+      "Cotiza «+imp», sin detallar el porcentaje",
     caracteristicas: {
       // El correo detalla mucho, pero nunca menciona clima ni elevador.
       aire: null,
@@ -790,6 +802,9 @@ export const hoteles: Hotel[] = [
       "Espacio para eventos, reuniones y celebraciones",
       "Hotel de no fumado",
     ],
+    impuestos: "aparte",
+    impuestosNota:
+      "13% segun el convenio firmado, sin confirmar sobre este precio",
     caracteristicas: {
       // El convenio detalla servicios pero nunca menciona clima ni elevador.
       aire: null,
@@ -888,6 +903,9 @@ export const hoteles: Hotel[] = [
       "Espacio para eventos, reuniones y celebraciones",
       "Hotel de no fumado",
     ],
+    impuestos: "aparte",
+    impuestosNota:
+      "13% segun el convenio firmado, sin confirmar sobre este precio",
     caracteristicas: {
       aire: null,
       elevador: null,

@@ -198,38 +198,109 @@ de tamaños con el script que está en `ARQUITECTURA.md`.
 
 ### 2.1 Corregir el precio «desde»
 
-- [ ] Elegir enfoque
-- [ ] Implementar
-- [ ] Verificar con capturas
+- [x] Elegir enfoque
+- [x] Implementar — resuelto por §11, por otra vía
+- [x] Marcar las tarifas que **no** llevan impuestos
+- [x] Verificar con capturas — comprobado sobre el HTML generado
 
-**Qué pasa hoy.** `costoPorPersonaNoche()` toma la tarifa más baja y la divide
-entre las personas que cubre. Eso hace que el **Hampton Inn aparezca a $32 y el
-Hotel 1915 a $47**, cuando el Hampton es más caro: su $32 asume ocupación
-cuádruple y no lleva impuestos, mientras los del documento original son netos.
+**Qué pasaba.** `costoPorPersonaNoche()` tomaba la tarifa más baja y la dividía
+entre las personas que cubre. Eso hacía que el **Hampton Inn apareciera a $32 y
+el Hotel 1915 a $47**, cuando el Hampton es más caro: su $32 asumía ocupación
+cuádruple y no llevaba impuestos, mientras los del documento original son netos.
 
-> Es la mejora más importante de la lista. La página existe para comparar y hoy
-> la comparación está sesgada.
+**Cómo se cerró la primera mitad (26 de agosto, §11).** No se anotó el supuesto:
+se eliminó. `costoPorPersonaNoche` y `costoEstadia` desaparecieron y en su lugar
+quedó `costoDosPersonas`, que **fija la ocupación en dos** en vez de suponer la
+más conveniente. El sesgo era de la división, y sin división no hay sesgo.
+Además devuelve la tarifa de la que salió el número, para que no se muestre una
+cifra sin decir de dónde viene.
 
-**Cómo se hace.** Tres opciones, de menor a mayor esfuerzo:
+> Las tres casillas originales quedaron sin marcar cuatro semanas porque la
+> tarea se cerró desde otra sección. Es el riesgo de tener el plan en un lado y
+> el trabajo en otro: **al cerrar una tarea desde fuera, hay que volver acá y
+> marcarla**.
 
-- **Anotar el supuesto.** Bajo el precio, una línea que diga qué ocupación
-  asume: "en habitación de 4". Sale de dividir `precio / personas` en la
-  habitación elegida, así que no hay que inventar nada.
-  *Toca:* `hotel-card.tsx`, `hoteles/[slug]/page.tsx`, y una función nueva en
-  `calculos.ts` que además de la cifra devuelva de qué habitación salió.
-- **Marcar las que no incluyen impuestos.** Un distintivo discreto en las fichas
-  del Hampton, Hilton Garden Inn, Courtyard y Fairfield.
-  *Toca:* un campo nuevo en el tipo `Hotel` (por ejemplo `impuestos: "incluidos"
-  | "aparte" | null`), `contenido.ts` y las dos pantallas.
-- **Recalcular con impuestos.** Lo más justo, pero **depende de la tarea 1.3**:
-  hoy faltan los porcentajes de casi todos.
+---
 
-**Recomendación.** Hacer las dos primeras ahora y la tercera cuando lleguen los
-porcentajes. Las dos primeras no dependen de nadie.
+**Qué pasa hoy — la mitad que sigue abierta.** Cuatro hoteles cotizan **sin
+impuestos** y la página no lo dice en ningún lado comparable:
 
-**Cómo se verifica.** Capturas antes y después de la parrilla completa, y
-confirmar que el orden aparente de precios ya no contradice el real.
+| Hotel | Qué dice la tarifa | Porcentaje |
+|---|---|---|
+| Hampton Inn | «más impuestos» | Sin detallar |
+| Hilton Garden Inn | «+imp» | Sin detallar |
+| Courtyard | 13% según el convenio firmado | 13%, sin confirmar sobre este precio |
+| Fairfield | 13% según el convenio firmado | 13%, sin confirmar sobre este precio |
 
+Los otros seis —los del documento original— son netos. Hoy esa diferencia vive
+en `resumen`, en el `detalle` de cada habitación y en `pendientes`: **texto
+libre**. Quien compara la parrilla ve diez precios que parecen equivalentes y
+cuatro de ellos van a subir un 13% al pagar.
+
+Es el mismo sesgo de antes con otra cara. `costoDosPersonas` arregló la
+ocupación; los impuestos siguen sin normalizar.
+
+**Cómo se hace.**
+
+1. Campo nuevo en el tipo `Hotel`, en `src/lib/datos/tipos.ts`:
+   ```ts
+   /** Si la tarifa ya trae impuestos. `null` = el hotel no lo informó. */
+   impuestos: "incluidos" | "aparte" | null;
+   ```
+   Sin `?`: obligatorio, para que el compilador obligue a decidirlo en los diez
+   y no se cuele uno por olvido.
+2. Cargarlo en `contenido.ts`: `"aparte"` en los cuatro de la tabla,
+   `"incluidos"` en los seis netos.
+3. Distintivo discreto en `hotel-card.tsx`, junto al precio: **«+ impuestos»**.
+   No un color de alarma ni un icono de advertencia — el hotel no está haciendo
+   nada malo, solo cotiza distinto.
+4. En la ficha de detalle, una línea bajo el precio con el porcentaje cuando se
+   conozca: «13% de impuestos según el convenio, sin confirmar».
+
+**Por qué no se recalcula el precio con el impuesto.** Porque solo dos de los
+cuatro tienen porcentaje, y los dos «sin confirmar». Sumar un 13% supuesto a
+Hampton y Hilton sería inventar un dato y presentarlo con la misma autoridad que
+los reales. Eso depende de la tarea 1.3, que sigue esperando respuesta de los
+hoteles. **Marcar es honesto; recalcular con un número inventado, no.**
+
+**La contra.** Un «+ impuestos» junto al precio hace que esos cuatro hoteles se
+vean peor de lo que quizá son, justo cuando son los tres de marca conocida y el
+de mayor nivel. Si alguien los descarta por el distintivo sin leer que el
+porcentaje es del 13%, el sitio habrá sesgado en la dirección contraria. Es
+asumible: **es peor que alguien reserve creyendo que paga $135 y pague $153.**
+
+**Cómo se verifica.** Capturas antes y después de la parrilla completa. En el
+después, los cuatro hoteles llevan el distintivo y los seis restantes no.
+`pnpm typecheck` debe fallar si algún hotel queda sin el campo — esa es la
+prueba de que el tipo hace su trabajo.
+
+### Qué se hizo — 18 de septiembre
+
+Se verificó sobre el HTML generado en vez de con capturas: es una comprobación
+que no depende del ojo y queda reproducible.
+
+- `impuestos: "incluidos" | "aparte" | null` **obligatorio** en el tipo `Hotel`.
+  Al añadirlo, `pnpm typecheck` dio **exactamente 10 errores, uno por hotel**:
+  la prueba de que el compilador obliga a decidirlo y no se cuela ninguno.
+- `impuestosNota?: string`, este sí opcional. Solo dos de los cuatro dan el
+  porcentaje; obligar a rellenarlo invitaría a inventarlo.
+- Cargado: `"aparte"` en Hampton Inn, Hilton Garden Inn, Courtyard y Fairfield;
+  `"incluidos"` en los seis del documento original.
+- `hotel-card.tsx`: «+ impuestos» junto al precio, en el gris de `text-mute`,
+  sin color de alarma ni icono.
+- `encabezado-hotel.tsx`: línea bajo el precio grande con el detalle real —
+  «13% según el convenio firmado, sin confirmar sobre este precio» en los
+  Marriott, «El hotel no detalló el porcentaje» en los otros dos.
+- `panel-reservas.tsx`: la misma marca junto al precio por persona, que es
+  donde alguien decide.
+
+**Verificado en `out/`:** los cuatro hoteles llevan «Mas impuestos» en su ficha
+y los seis netos no; la portada muestra el distintivo 4 veces sobre 10 fichas.
+`tsc --noEmit` y `eslint` sin errores; el build genera las 10 rutas.
+
+**Lo que sigue abierto:** recalcular el precio con el impuesto incluido. Depende
+de la tarea 1.3 — faltan los porcentajes de Hampton y Hilton Garden, y los de
+Courtyard y Fairfield están «sin confirmar».
 ### 2.2 Agregar vista previa al compartir
 
 - [ ] Crear la imagen 1200×630

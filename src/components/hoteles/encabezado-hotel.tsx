@@ -57,6 +57,19 @@ export function EncabezadoHotel({ hotel }: { hotel: Hotel }) {
             cabeza. Sin esto, dos hoteles con el mismo total parecerían
             equivalentes aunque uno lo logre con un dormitorio compartido.
           */}
+          {/*
+            Impuestos. Va aca arriba y no enterrado en la tabla porque la cifra
+            grande de encima es la que la gente compara, y en cuatro hoteles no
+            es lo que se termina pagando. No se suma el 13% al total: solo dos
+            de los cuatro dan el porcentaje, y los dos «sin confirmar».
+          */}
+          {hotel.impuestos === "aparte" && (
+            <p className="mt-2 text-sm text-graphite">
+              <span className="font-medium">Mas impuestos.</span>{" "}
+              {hotel.impuestosNota ?? "El hotel no detallo el porcentaje."}
+            </p>
+          )}
+
           {dosPersonas && (
             <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-graphite">
               {dosPersonas.tarifa.unidad === "persona-noche" ? (

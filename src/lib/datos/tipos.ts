@@ -148,6 +148,23 @@ export type Hotel = {
   clima: string | null;
   acceso: string | null;
   servicios: string[];
+  /**
+   * Si la tarifa publicada ya trae impuestos.
+   *
+   * Obligatorio a proposito, sin `?`: cuatro hoteles cotizan sin ellos y seis
+   * netos, y esa diferencia decide si dos precios de la parrilla son
+   * comparables. Si fuera opcional, un hotel nuevo entraria sin que nadie lo
+   * decidiera y su precio se leeria como neto sin serlo.
+   *
+   * `null` = el hotel no lo informo. No es lo mismo que `"incluidos"`.
+   */
+  impuestos: "incluidos" | "aparte" | null;
+  /**
+   * Detalle del impuesto, cuando el hotel lo dio. Solo dos de los cuatro que
+   * cotizan aparte dicen el porcentaje; los otros escriben «mas impuestos» sin
+   * numero. Opcional a proposito: obligar a rellenarlo invitaria a inventarlo.
+   */
+  impuestosNota?: string;
   caracteristicas: Caracteristicas;
   habitaciones: Habitacion[];
   imagenes: Imagen[];
