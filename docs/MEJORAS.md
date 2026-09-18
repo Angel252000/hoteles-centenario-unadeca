@@ -2346,6 +2346,236 @@ reparte por WhatsApp. Es el argumento más concreto a favor de resolver la compa
 
 ---
 
+## 17. Llegaron las fotos del Centenario (11 de septiembre)
+
+- [x] Copiar las cinco piezas con texto a `public/centenario/`
+- [x] Sumar `public/centenario` al optimizador y generar las variantes
+- [x] Cambiar los seis huecos por las cinco fotos reales
+- [x] Ajustar los keyframes de seis pasos a cinco
+- [x] Resolver la proporción: la pieza es 2,71:1 y la caja en móvil es 4:3
+- [x] Verificar en el navegador, escritorio y móvil
+- [x] Que el mouse encima ya no la pare, y que se pare sola fuera de pantalla
+
+### Qué pasa hoy
+
+El carrusel de §9 quedó a tamaño de banda, con seis `EspacioPendiente` y el
+pase discreto ya funcionando. Lo único que faltaba eran las fotos. Llegaron.
+
+### Qué llegó, exactamente
+
+Diez archivos en `~/Downloads/Fotos Página Hospedaje Centenario`, pero no son
+diez fotos: son **cinco fotos, cada una en dos versiones**.
+
+| Con texto | Sin texto | Foto | Titular quemado en la imagen |
+|---|---|---|---|
+| `-1 copy` | `-10 copy` | Mujer de espaldas en el aeropuerto | ORGANIZÁ TU VIAJE |
+| `-3` | `-8 copy` | Pareja mayor caminando con maleta | VEN A RECORDAR DONDE SE CONOCIERON |
+| `-2` | `-9 copy` | Graduación, birrete y borla | VEN A RECORDAR ESE DÍA ESPECIAL |
+| `-4` | `-7 copy` | Recepción de hotel, tres huéspedes | VEN A LOS MEJORES HOTELES EN ALAJUELA |
+| `-5` | `-6 copy` | Brindis con copas y confeti dorado | ESTE BRINDIS TE ESTA ESPERANDO |
+
+Las cinco comparten el bajante «¡VEN A CELEBRAR EL CENTENARIO!» y el panel
+azul de la derecha con el logo. Todas miden **1999×737**, o sea **2,71:1**.
+
+Las versiones «sin texto» no son la foto limpia: son la misma composición con
+la caja azul **vacía**, que se lee como un error de exportación, no como un
+recurso. No se usan. Van las cinco con texto.
+
+### Cómo se hace
+
+1. Copiar las cinco con texto a `public/centenario/01.jpg` … `05.jpg`, en
+   orden narrativo: viaje, reencuentro, recuerdo, hospedaje, brindis.
+2. Sumar `public/centenario` a `ORIGEN` en `scripts/optimizar-imagenes.mjs` y
+   correr `pnpm build:imagenes`. Sin eso, `<Foto>` no encuentra variantes y
+   sirve el JPG de 1999 px a todo el mundo, que es exactamente lo que §13 vino
+   a arreglar.
+3. En `carrusel-centenario.tsx`, cambiar `CUPOS` —seis números— por la lista
+   real de cinco banners con su `alt`, y `EspacioPendiente` por `<Foto>`.
+4. En `globals.css`, rehacer los keyframes: eran seis pasos sobre doce
+   diapositivas (una = 8,3333 %); pasan a cinco pasos sobre diez (una = 10 %).
+   La tanda sigue terminando en `-50%`. La duración baja de 42 s a 35 s para
+   que cada foto se quede los mismos ~5,6 s de antes.
+5. **La proporción, que es el punto que obliga a decidir.** La caja de la
+   diapositiva es hoy `aspect-4/3` en móvil, `sm:aspect-16/9` y
+   `lg:aspect-21/8`. La pieza es 2,71:1:
+   - En `lg`, 21/8 = 2,625. Casi idéntico: el recorte es de un par de píxeles.
+   - En `sm`, 16/9 = 1,78. Recorta un 34 % del ancho.
+   - En móvil, 4/3 = 1,33. Recorta más de la mitad.
+
+   Con `object-position` centrado, ese recorte se come el panel del titular,
+   que es donde está todo el mensaje. La salida es anclar a la derecha
+   —`object-right`— hasta `lg`, y bajar la caja de móvil a 2:1: a 390 px la
+   banda queda de 195 px de alto y el titular mide unos 16 px, que se lee sin
+   acercar. Se pierde la mitad izquierda de la foto y se gana el mensaje; en
+   una pieza cuyo texto está quemado en el pixel, ese es el intercambio
+   correcto. `max-h-[56svh]` se queda: es la decisión de §9 para que la banda
+   no se coma el pliegue.
+6. Sacar del carrusel la rama de `medios.portada`. Ver las contras.
+
+### Cómo se verifica
+
+En `localhost`: que las cinco piezas pasen en orden, que el salto de la quinta
+a la primera no se note, que el mouse encima lo pare y al salir siga, y que
+`<picture>` esté sirviendo AVIF y no el JPG. En un viewport de 390 px, que el
+titular se lea sin acercar. Con `prefers-reduced-motion` activo, que no se
+mueva nada y se pueda pasar de a una foto.
+
+### Las contras
+
+- **Son cinco, no seis.** No hay una sexta pieza. Si aparece, entra en la
+  lista, pero **hay que tocar los keyframes también**: el paso está escrito a
+  mano para cinco. Es el mismo acoplamiento que ya tenía §9 con seis, no uno
+  nuevo, pero ahora que las fotos son reales conviene dejarlo dicho.
+- **`medios.portada` sale del carrusel.** §9 había fusionado la banda de
+  portada con el carrusel: si algún día llegaba `portada.jpg`, entraba como
+  primera diapositiva. Con cinco fotos reales esa rama se vuelve una trampa —
+  cargar la portada haría seis diapositivas contra unos keyframes escritos
+  para cinco, y la cinta se desfasaría sin avisar—. Se saca la rama. Queda
+  pendiente decidir qué pasa con `medios.portada` cuando llegue: o vuelve como
+  primera pieza y se rehacen los keyframes, o el campo se retira del contrato
+  de datos.
+- **El texto está quemado en el pixel.** No se corrige, no se traduce, no se
+  reescala aparte de la foto y no lo lee un lector de pantalla — por eso el
+  titular se repite en el `alt` de cada imagen. Cualquier cambio de copy es un
+  pedido a quien diseñó las piezas.
+- **Hay una falta de ortografía adentro de una imagen.** La quinta dice «ESTE
+  BRINDIS TE **ESTA** ESPERANDO», sin tilde. No se arregla desde acá.
+- **El registro no es parejo.** La primera vosea —«ORGANIZÁ»—; las otras
+  cuatro tutean —«VEN»—. Las dos formas son normales en Costa Rica, pero
+  mezcladas en la misma banda se notan.
+- **El bajante se repite cinco veces.** «¡VEN A CELEBRAR EL CENTENARIO!» en
+  las cinco piezas. Como firma de un slider funciona; cinco veces seguidas
+  puede leerse como insistencia.
+- **En móvil se ve media foto.** El anclaje a la derecha es una decisión a
+  favor del texto y en contra de la imagen. Si se prefiere lo contrario, el
+  cambio es una palabra —`object-right` a `object-center`— y el titular queda
+  cortado.
+
+### Qué se hizo — 11 de septiembre
+
+Lo del plan, más dos cambios que salieron de mirarlo en pantalla.
+
+**Uno: la proporción de la caja.** El plan decía dejar `lg:aspect-21/8` porque
+2,625 y 2,712 casi no se distinguen. En pantalla sí se distinguen, y no por el
+21/8 sino por el `max-h-[56svh]` que venía con él: entre los dos la banda
+quedaba en 3,34:1 y le cortaban el logo de arriba y el piso de la foto. Estas
+piezas no son fotos sueltas que toleren un recorte —son composiciones, con el
+panel del titular y el logo pegados a los bordes—, así que de `sm` para arriba
+la caja pasó a la proporción nativa, `aspect-[1999/737]`, y el `max-h` salió.
+
+Eso contradice a §9, que había puesto ese `max-h` para que la banda no se
+comiera el pliegue. Sigue siendo cierto: a 1470 px la banda mide 542 px de
+alto. Es un cambio de criterio con la pieza real delante, no un descuido — y
+si molesta, el `max-h` vuelve en una línea, a cambio del recorte.
+
+**Dos: la resolución.** El optimizador tenía tres anchos, con tope en 1600. La
+pieza mide 1999 y va a ancho completo, así que en cualquier pantalla retina el
+1600 se ampliaba y el titular quedaba blando. Se agregó un cuarto escalón,
+1999, que solo alcanza a estas cinco: el script nunca amplía y la foto de hotel
+más grande que hay es de 1600.
+
+De paso, el `sizes` de la diapositiva dejó de ser `100vw` a secas. Abajo de
+`sm` la caja es 2:1 y la pieza 2,712:1, así que `object-cover` la dibuja a
+2,712 × el alto de la caja —529 px de imagen dentro de una caja de 390—, y
+declarar `100vw` hacía que el navegador eligiera la variante de 400 px. Ahora
+dice `(max-width: 639px) 136vw, 100vw`.
+
+**Tres: cuándo se para, que se rehízo entero.** Hasta hoy el único freno era
+el mouse encima. El pedido fue sacarlo, y tiene razón de ser: el cursor queda
+quieto sobre la banda todo el tiempo sin que nadie lo haya querido —se lee lo
+que está debajo y el mouse se olvida arriba—, y desde afuera eso se ve como un
+carrusel roto. A cambio entró algo mejor: **fuera de pantalla se para sola**.
+Animar lo que nadie mira gasta cuadros y batería, y evita que quien vuelve a
+subir se encuentre la banda en una pieza al azar.
+
+Eso no se puede hacer con CSS solo, así que apareció
+`ui/observador-en-vista.tsx`: un `IntersectionObserver` montado una vez en el
+layout, con la misma forma que el de reveal, que escribe `data-en-vista` en el
+visor. La diferencia con reveal es que este no deja de observar — reveal marca
+«ya se vio» y se desentiende, acá el estado va y viene.
+
+Falla abierto a propósito: el servidor dibuja `data-en-vista="si"` y el
+observador solo lo cambia a `"no"`. Si el JavaScript nunca llega, la banda anda
+siempre, como antes. Al revés —arrancar en `"no"`— una falla la dejaría
+congelada en la primera foto sin que nadie supiera por qué.
+
+Se mantuvo la pausa por `:focus-within`. No molesta a nadie con mouse y deja en
+pie una forma real de detenerla, que es lo que pide WCAG 2.2.2 para cualquier
+cosa que se mueva sola más de cinco segundos. Vale decirlo claro igual: con el
+hover afuera, un usuario con mouse ya no tiene cómo parar la banda. Si eso
+pesa, la salida no es devolver el hover sino un botón de pausa de verdad — que
+§9 ya había probado y sacado.
+
+La duración bajó de 42 s a 35 s, pero no es que vaya más rápido: son cinco
+diapositivas en vez de seis, y cada una se sigue quedando los mismos ~5,6 s.
+
+**Cuatro: la calidad de compresión, aparte del resto de las fotos.** El
+optimizador comprimía todo igual, AVIF a q50. Sirve para una foto de hotel:
+lo que se pierde es detalle en una pared lisa y nadie lo nota. No sirve para
+estas cinco, que son las únicas con **texto quemado en el pixel**: a q50 las
+letras agarran el halo típico de la compresión con pérdida alrededor del
+contorno, y ahí sí se ve, porque el ojo sabe qué forma tendría que tener una A.
+
+Se agregó `CALIDAD_POR_CARPETA` al script: `public/centenario` va a q72 AVIF y
+q88 WebP. La variante de 1999 px pasa de 42 a 83 KB —y las cinco juntas, de
+~200 KB a ~436 KB— sobre originales de 690 KB. Son las cinco imágenes de la
+primera pantalla del sitio; el presupuesto está bien gastado. La clave es el
+prefijo de carpeta, no el archivo: una pieza nueva ahí adentro hereda la
+calidad sin tocar nada.
+
+**El techo que queda, y no es de código.** El archivo original mide 1999 px de
+ancho. La banda va a ancho completo, así que en un portátil retina de 1470 px
+el navegador necesita 2940 px reales y solo tenemos 1999: la imagen se amplía
+un 47 %, y ninguna calidad de compresión lo arregla — no se puede comprimir
+detalle que el archivo nunca tuvo. Para que estas piezas se vean de verdad
+nítidas en pantalla retina hace falta pedirle a diseño la exportación a ~4000
+px de ancho. Es un pedido de una línea y es lo único que mueve la aguja de acá
+en adelante.
+
+**Cinco: se sacó el rótulo «Galería del Centenario».** Era el pie de la banda.
+Tenía sentido mientras la banda eran seis huecos grises y había que explicar
+qué iba a ir ahí; con las piezas reales adentro repetía en texto chico —y en
+oro sobre marino— lo que cada imagen ya dice en grande, con su propio titular y
+el logo de UNADECA quemados. Dos marcas de lo mismo, una arriba de la otra.
+
+### Verificado en navegador — 11 de septiembre
+
+En `localhost:3001`, ventana de 1470×808 y `devicePixelRatio` 2:
+
+- Diez diapositivas en el DOM (cinco, dos veces), ciclo de 35 s.
+- La caja mide 1470×542, proporción 2,712 — idéntica a la nativa, sin recorte.
+- Se sirve `01-1999.avif`, no el JPG ni el escalón de 1600.
+- La página no gana scroll horizontal, que es el riesgo de `w-screen`.
+- Forzando `data-en-vista="no"` el pase pasa a `paused`; con `"si"` vuelve a
+  `running`. Con el foco de teclado adentro, `paused`. **No hay ninguna regla
+  que pause por `:hover`** — se comprobó listando los selectores que tocan
+  `animation-play-state`, y el único que existe es
+  `.carrusel-viewport[data-en-vista="no"] .carrusel-cinta,
+  .carrusel-viewport:focus-within .carrusel-cinta`.
+- En un viewport de 390 px: banda de 390×195, anclada a la derecha
+  (`object-position: 100% 50%`), y con el `sizes` corregido baja la variante de
+  1999 en vez de la de 400.
+
+Una advertencia para la próxima medición: **Chrome frena las animaciones CSS en
+pestañas de segundo plano**. Con la ventana atrás, `animationPlayState` se lee
+`paused` y el `transform` no avanza, aunque no haya ninguna regla que lo pause.
+La primera lectura de este cambio dio exactamente eso y parecía un bug; lo que
+lo desarmó fue mirar `document.hidden`, que estaba en `true`. Conviene
+comprobar ese valor antes de creerle a una medición de animación.
+
+### Lo que quedó abierto
+
+- Las tres cosas del diseño que no se arreglan desde el código: la tilde de
+  «ESTÁ» en la quinta pieza, el voseo de la primera contra el tuteo de las
+  otras cuatro, y si el bajante repetido cinco veces es lo buscado.
+- Qué pasa con `medios.portada` si algún día llega el archivo. Hoy el campo
+  sigue en el contrato de datos y no lo usa nadie.
+- La copia vieja del proyecto en `~/Documents/Desarrollo/hoteles-promo` se
+  mandó a la papelera el 11 de septiembre. Tenía un solo commit —«Initial
+  commit from Create Next App»—, la paleta crema anterior al 26 de agosto y
+  todo el trabajo sin commitear; se confirmó que su `MEJORAS.md` (887 líneas)
+  era un subconjunto del de acá (2357) antes de moverla.
+
 ## Contactos
 
 | Hotel | Contacto |

@@ -341,6 +341,56 @@ export const variantes: Record<string, Variante> = {
       800,
       1600
     ]
+  },
+  "/centenario/01.jpg": {
+    "ancho": 1999,
+    "alto": 737,
+    "anchos": [
+      400,
+      800,
+      1600,
+      1999
+    ]
+  },
+  "/centenario/02.jpg": {
+    "ancho": 1999,
+    "alto": 737,
+    "anchos": [
+      400,
+      800,
+      1600,
+      1999
+    ]
+  },
+  "/centenario/03.jpg": {
+    "ancho": 1999,
+    "alto": 737,
+    "anchos": [
+      400,
+      800,
+      1600,
+      1999
+    ]
+  },
+  "/centenario/04.jpg": {
+    "ancho": 1999,
+    "alto": 737,
+    "anchos": [
+      400,
+      800,
+      1600,
+      1999
+    ]
+  },
+  "/centenario/05.jpg": {
+    "ancho": 1999,
+    "alto": 737,
+    "anchos": [
+      400,
+      800,
+      1600,
+      1999
+    ]
   }
 };
 

@@ -18,7 +18,7 @@ import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
-const ORIGEN = ["public/hoteles", "public/marca"];
+const ORIGEN = ["public/hoteles", "public/marca", "public/centenario"];
 const SALIDA = "public/opt";
 
 /**
@@ -29,11 +29,51 @@ const SALIDA = "public/opt";
 const ANCHOS = [400, 800, 1600];
 
 /**
+ * Las piezas del Centenario llevan un cuarto escalón, 1999. Miden exactamente
+ * eso y van a ancho completo de pantalla, así que en un monitor grande —o en
+ * cualquier pantalla retina— el 1600 se tiene que ampliar y el titular, que
+ * está quemado en la imagen, se ve blando.
+ *
+ * Va por carpeta y no global porque el logo de UNADECA mide 3088 px y también
+ * alcanzaría el escalón, pero nunca lo baja: su `sizes` lo topa en 282 px de
+ * ancho. Serían 155 KB versionados que ningún navegador pide.
+ */
+const ANCHOS_POR_CARPETA = {
+  "public/centenario": [400, 800, 1600, 1999],
+};
+
+const anchosDe = (ruta) =>
+  Object.entries(ANCHOS_POR_CARPETA).find(([c]) => ruta.startsWith(c))?.[1] ??
+  ANCHOS;
+
+/**
  * AVIF a 50 y WebP a 75 dan calidades parecidas a ojo. Si alguna foto muestra
  * bandeo en una pared lisa, subir la suya a 60 antes que mover el número de
  * todas.
  */
 const CALIDAD = { avif: 50, webp: 75 };
+
+/**
+ * Las piezas del Centenario van más arriba, y no es capricho: son las únicas
+ * que llevan **texto quemado en el pixel**. Una foto de hotel a q50 pierde
+ * detalle en una pared lisa y nadie lo nota; una letra a q50 agarra el halo
+ * típico de la compresión con pérdida alrededor del contorno, y ahí sí se ve,
+ * porque el ojo sabe exactamente qué forma tendría que tener una A.
+ *
+ * Suben de q50/q75 a q72/q88. Cuesta unos 40 KB por variante —de 42 a 83 KB en
+ * AVIF— sobre un original de 690 KB; son las cinco imágenes de la primera
+ * pantalla del sitio y valen ese presupuesto.
+ *
+ * La clave es el prefijo de la carpeta, no el archivo: si mañana entra una
+ * pieza nueva a `public/centenario`, hereda la calidad sin tocar nada.
+ */
+const CALIDAD_POR_CARPETA = {
+  "public/centenario": { avif: 72, webp: 88 },
+};
+
+const calidadDe = (ruta) =>
+  Object.entries(CALIDAD_POR_CARPETA).find(([c]) => ruta.startsWith(c))?.[1] ??
+  CALIDAD;
 
 const esImagen = (f) => /\.(jpe?g|png)$/i.test(f);
 
@@ -58,7 +98,7 @@ for (const dir of ORIGEN) {
 
     // Nunca ampliar: una foto de 375px no gana nada estirada a 800, y el
     // archivo resultante pesa más que el original para verse peor.
-    const anchos = ANCHOS.filter((a) => a <= meta.width);
+    const anchos = anchosDe(ruta).filter((a) => a <= meta.width);
     if (anchos.length === 0) anchos.push(meta.width);
 
     // `public/hoteles/tucan/03.jpg` -> `/opt/hoteles/tucan/03`
@@ -66,7 +106,7 @@ for (const dir of ORIGEN) {
     mkdirSync(join(RAIZ, SALIDA, dirname(base)), { recursive: true });
 
     for (const ancho of anchos) {
-      for (const [formato, calidad] of Object.entries(CALIDAD)) {
+      for (const [formato, calidad] of Object.entries(calidadDe(ruta))) {
         const destino = join(RAIZ, SALIDA, `${base}-${ancho}.${formato}`);
         const buffer = await sharp(absoluta)
           .resize({ width: ancho, withoutEnlargement: true })

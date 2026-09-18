@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Jost } from "next/font/google";
 import "@/styles/globals.css";
+import { ObservadorEnVista } from "@/components/ui/observador-en-vista";
 import { ObservadorReveal } from "@/components/ui/observador-reveal";
 
 /** Títulos y cifras: geométrica, de trazo parejo y caja alta ancha. */
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         {children}
         <ObservadorReveal />
+        <ObservadorEnVista />
       </body>
     </html>
   );

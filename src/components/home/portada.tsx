@@ -53,24 +53,23 @@ export function Portada() {
         chica del de arriba. El carrusel se quedó con esta caja —incluido el
         `max-h`, que es lo que evita que la banda se coma la pantalla: sin él,
         a 1440 la proporción 21/8 mide 540px y empuja el titular y las cifras
-        abajo del pliegue— y `medios.portada` pasó a ser su primera
-        diapositiva. Ver `carrusel-centenario.tsx`.
+        abajo del pliegue—. El 11 de septiembre entraron las cinco piezas
+        de campaña del Centenario y `medios.portada` salió del carrusel: con
+        fotos reales, cargarla haría seis diapositivas contra un paso escrito
+        para cinco. Ver `carrusel-centenario.tsx` y §17 de `docs/MEJORAS.md`.
       */}
       <CarruselCentenario />
 
       {/*
-        2 · Rótulo de la banda, como pie de foto.
-
-        Va debajo y no encima por la misma razón que el titular tampoco se
-        sobrepone: la foto definitiva no existe todavía, y un texto encima
-        depende de que la mitad que le toca sea oscura. Así funciona con
-        cualquier imagen que llegue.
+        Acá iba el rótulo «Galería del Centenario», como pie de la banda. Se
+        sacó el 11 de septiembre, cuando entraron las piezas reales: cada una
+        ya trae su propio titular y el logo de UNADECA quemados en la imagen,
+        así que el rótulo repetía en texto chico lo que la foto decía en
+        grande. Tenía sentido mientras la banda eran huecos grises y había que
+        explicar qué iba ahí.
       */}
-      <div className="mx-auto max-w-[92rem] px-5 pt-5 sm:px-8">
-        <p className="eyebrow text-brass-bright">Galería del Centenario</p>
-      </div>
 
-      {/* 3 · Titular, gancho y cifras */}
+      {/* 2 · Titular, gancho y cifras */}
       <div className="mx-auto max-w-[92rem] px-5 py-14 sm:px-8 sm:py-20">
         <div className="lg:flex lg:items-end lg:justify-between lg:gap-16">
           <div>

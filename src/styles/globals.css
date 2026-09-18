@@ -370,46 +370,44 @@
     foto—, porque el único instante en que una diapositiva está entera es el
     que dura un parpadeo entre dos avances.
 
-    La cinta tiene doce diapositivas (seis, dos veces — ver el componente),
-    así que una diapositiva es 100/12 = 8.3333% del ancho total, y las seis
-    de una tanda son el -50% de siempre.
+    La cinta tiene diez diapositivas (cinco, dos veces — ver el componente),
+    así que una diapositiva es 100/10 = 10% del ancho total, y las cinco de
+    una tanda son el -50% de siempre. Eran seis y doce hasta el 11 de
+    septiembre, cuando llegaron las fotos reales y resultaron ser cinco.
 
-    Cada diapositiva se lleva un sexto del tiempo (16.667%): se queda quieta
-    13.33% y avanza en los 3.33% restantes. A 42s eso es unos 5.6 segundos
-    quieta y 1.4 de movimiento. El `animation-timing-function` va DENTRO de
-    los keyframes porque en CSS la curva declarada en un keyframe gobierna el
-    tramo que arranca ahí: así el avance usa la curva del sitio y el reposo no
-    tiene curva que aplicar.
+    Cada diapositiva se lleva un quinto del tiempo (20%): se queda quieta 16%
+    y avanza en el 4% restante. A 35s eso es unos 5,6 segundos quieta y 1,4 de
+    movimiento — el mismo ritmo de lectura que tenía con seis, que es lo que
+    importa: el titular va quemado en la foto y hay que alcanzar a leerlo.
+
+    El `animation-timing-function` va DENTRO de los keyframes porque en CSS la
+    curva declarada en un keyframe gobierna el tramo que arranca ahí: así el
+    avance usa la curva del sitio y el reposo no tiene curva que aplicar.
   */
   @keyframes carrusel-cinta {
     0%,
-    13.33% {
+    16% {
       transform: translateX(0);
       animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     }
-    16.67%,
-    30% {
-      transform: translateX(-8.3333%);
+    20%,
+    36% {
+      transform: translateX(-10%);
       animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     }
-    33.33%,
-    46.67% {
-      transform: translateX(-16.6667%);
+    40%,
+    56% {
+      transform: translateX(-20%);
       animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     }
-    50%,
-    63.33% {
-      transform: translateX(-25%);
+    60%,
+    76% {
+      transform: translateX(-30%);
       animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     }
-    66.67%,
-    80% {
-      transform: translateX(-33.3333%);
-      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    83.33%,
-    96.67% {
-      transform: translateX(-41.6667%);
+    80%,
+    96% {
+      transform: translateX(-40%);
       animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     }
     100% {
@@ -419,19 +417,33 @@
 
   .carrusel-cinta {
     width: max-content;
-    animation: carrusel-cinta 42s infinite;
+    animation: carrusel-cinta 35s infinite;
   }
 
   /*
-    El hover/foco/toque se escuchan en el visor, no en la cinta: es el visor
-    el que tiene `tabIndex` y el que ocupa toda el área visible —la cinta es
-    más ancha que su pantalla, `:hover` sobre ella sola no cubriría los
-    bordes recortados—. Por eso el combinador: se pausa la cinta (hija)
-    cuando el visor (padre) está en alguno de los tres estados.
+    Qué la para, y qué no. Cambió el 11 de septiembre — ver §17 de
+    `docs/MEJORAS.md`.
+
+    **El mouse encima ya no la para.** Antes sí, y era el único freno. El
+    problema es que el cursor queda quieto sobre la banda todo el tiempo sin
+    que nadie lo haya querido —se lee lo que está debajo y el mouse se olvida
+    arriba—, y desde afuera eso se ve como un carrusel roto. El pedido fue
+    que siga pasando.
+
+    **Fuera de pantalla se para sola.** Animar algo que nadie mira gasta
+    cuadros y batería, y además hace que quien vuelve a subir se encuentre la
+    banda en una pieza al azar. `data-en-vista` lo escribe
+    `<ObservadorEnVista>` desde el layout; el servidor lo dibuja en `"si"`,
+    así que sin JavaScript esto nunca llega a aplicarse y la banda anda
+    siempre, como antes.
+
+    **El foco de teclado sí la para.** No molesta a nadie con mouse y deja en
+    pie una forma real de detenerla, que es lo que pide WCAG 2.2.2 para
+    cualquier cosa que se mueva sola más de cinco segundos. El visor lleva
+    `tabIndex` justo para que haya algo ahí adentro que se pueda enfocar.
   */
-  .carrusel-viewport:hover .carrusel-cinta,
-  .carrusel-viewport:focus-within .carrusel-cinta,
-  .carrusel-viewport:active .carrusel-cinta {
+  .carrusel-viewport[data-en-vista="no"] .carrusel-cinta,
+  .carrusel-viewport:focus-within .carrusel-cinta {
     animation-play-state: paused;
   }
 }
