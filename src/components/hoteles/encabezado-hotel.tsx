@@ -21,16 +21,15 @@ import {
  * Lo que se lee al llegar a la ficha: el precio, el nivel, el nombre y la
  * fila de datos duros.
  *
- * `null` no es `false`. Cuando el hotel no informó el clima o el acceso, el
- * texto lo dice —«Clima sin dato»— en vez de afirmar que no lo tiene. Ver la
- * regla 1 de `docs/ARQUITECTURA.md`.
+ * `null` no es `false`. Cuando el hotel no informó el clima, la capacidad o
+ * el acceso, el spec no se pinta: desde §24 la página no escribe «sin dato»,
+ * que ocupaba un renglón para decir que no se sabe nada. Sigue sin afirmarse
+ * lo contrario, que es lo que pide la regla 1 de `docs/ARQUITECTURA.md`.
  */
 const textoAire = {
   si: "Aire acondicionado",
   parcial: "A/C en parte del hotel",
   no: "Solo ventilador",
-  // El hotel no lo informó. No es lo mismo que "no tiene".
-  null: "Clima sin dato",
 } as const;
 
 export function EncabezadoHotel({ hotel }: { hotel: Hotel }) {
@@ -57,19 +56,6 @@ export function EncabezadoHotel({ hotel }: { hotel: Hotel }) {
             cabeza. Sin esto, dos hoteles con el mismo total parecerían
             equivalentes aunque uno lo logre con un dormitorio compartido.
           */}
-          {/*
-            Impuestos. Va aca arriba y no enterrado en la tabla porque la cifra
-            grande de encima es la que la gente compara, y en cuatro hoteles no
-            es lo que se termina pagando. No se suma el 13% al total: solo dos
-            de los cuatro dan el porcentaje, y los dos «sin confirmar».
-          */}
-          {hotel.impuestos === "aparte" && (
-            <p className="mt-2 text-sm text-graphite">
-              <span className="font-medium">Mas impuestos.</span>{" "}
-              {hotel.impuestosNota ?? "El hotel no detallo el porcentaje."}
-            </p>
-          )}
-
           {dosPersonas && (
             <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-graphite">
               {dosPersonas.tarifa.unidad === "persona-noche" ? (
@@ -98,11 +84,6 @@ export function EncabezadoHotel({ hotel }: { hotel: Hotel }) {
                 : ""}
             </p>
           )}
-
-          <p className="mt-3 flex items-center gap-2 text-graphite">
-            <Pin className="h-[1.15rem] w-[1.15rem] shrink-0 text-mute" />
-            Alajuela, Costa Rica
-          </p>
         </div>
 
         {/*
@@ -135,36 +116,65 @@ export function EncabezadoHotel({ hotel }: { hotel: Hotel }) {
         <span className="font-normal text-graphite"> — {hotel.resumen}</span>
       </h1>
 
+      {/*
+        Ubicacion, al estilo de cualquier pagina de hotel: donde queda y
+        como verlo en un mapa. El enlace busca por NOMBRE y no por
+        coordenadas ni por una calle inventada —ninguna cotizacion traia
+        direccion—: el nombre del hotel es un dato exacto y Maps resuelve
+        el resto. Cuando llegue la direccion real entra en `direccion` y
+        esta misma linea la muestra. Ver §26 de docs/MEJORAS.md.
+      */}
+      <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-graphite">
+        <span className="flex items-center gap-2">
+          <Pin className="h-[1.15rem] w-[1.15rem] shrink-0 text-mute" />
+          {hotel.direccion ?? "Alajuela, Costa Rica"}
+        </span>
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${hotel.nombre}, Alajuela, Costa Rica`,
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="cursor-pointer text-sm font-medium text-cobalt-deep underline underline-offset-4 transition-colors duration-200 hover:text-ink"
+        >
+          Ver en el mapa
+        </a>
+      </p>
+
       {/* Fila de specs con iconos */}
-      <ul className="mt-7 flex flex-wrap items-center gap-x-8 gap-y-3">
-        <Spec icono={<Personas />}>
-          {hotel.capacidad === null
-            ? "Capacidad sin dato"
-            : `${hotel.capacidad} personas`}
-        </Spec>
-        <Spec icono={<Cama />}>
+      {/*
+        Chips con borde desde §26, no texto suelto separado por aire. Cada dato
+        queda acotado en su propia caja y la fila se lee como una lista de lo
+        que el hotel tiene, que es como lo muestran las paginas de hotel. Con
+        los «sin dato» ya fuera (§24), la fila solo trae lo que se sabe.
+      */}
+      <ul className="mt-7 flex flex-wrap items-center gap-3">
+        {hotel.capacidad !== null && (
+          <Spec chip icono={<Personas />}>{hotel.capacidad} personas</Spec>
+        )}
+        <Spec chip icono={<Cama />}>
           {tiposHabitacion}{" "}
           {tiposHabitacion === 1 ? "tipo de tarifa" : "tipos de habitación"}
         </Spec>
-        <Spec icono={<Taza />}>
+        <Spec chip icono={<Taza />}>
           {hotel.caracteristicas.desayunoIncluido
             ? "Desayuno incluido"
             : "Desayuno $6 aparte"}
         </Spec>
-        <Spec icono={<Clima />}>
-          {textoAire[hotel.caracteristicas.aire ?? "null"]}
-        </Spec>
-        <Spec
-          icono={
-            hotel.caracteristicas.elevador === true ? <Elevador /> : <Escalera />
-          }
-        >
-          {hotel.caracteristicas.elevador === true
-            ? "Con elevador"
-            : hotel.caracteristicas.elevador === false
-              ? "Solo gradas"
-              : "Acceso sin dato"}
-        </Spec>
+        {hotel.caracteristicas.aire !== null && (
+          <Spec chip icono={<Clima />}>
+            {textoAire[hotel.caracteristicas.aire]}
+          </Spec>
+        )}
+        {hotel.caracteristicas.elevador !== null && (
+          <Spec
+            icono={
+              hotel.caracteristicas.elevador ? <Elevador /> : <Escalera />
+            }
+          >
+            {hotel.caracteristicas.elevador ? "Con elevador" : "Solo gradas"}
+          </Spec>
+        )}
       </ul>
     </>
   );

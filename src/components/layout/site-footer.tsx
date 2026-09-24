@@ -1,3 +1,4 @@
+import { GitHub } from "@/components/ui/iconos";
 import Link from "next/link";
 import { evento, hoteles } from "@/lib/datos";
 
@@ -54,9 +55,24 @@ export function SiteFooter() {
 
       <div className="mx-auto mt-12 max-w-[88rem] px-5 sm:px-8">
         <div className="rule-invert" />
-        <p className="pt-6 text-xs text-mute-invert">
-          © {new Date().getFullYear()} — Documento interno de trabajo.
-        </p>
+        {/*
+          Dos piezas en una fila: el aviso a la izquierda y el credito a la
+          derecha. `justify-between` con `flex-wrap`, asi que en telefono el
+          credito baja a su propio renglon en vez de apretarse contra el aviso.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pt-6 text-xs text-mute-invert">
+          <p>© {new Date().getFullYear()} — Documento interno de trabajo.</p>
+
+          <a
+            href="https://github.com/Angel252000"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex cursor-pointer items-center gap-2 transition-colors duration-200 hover:text-bone"
+          >
+            Sitio por Angel252000
+            <GitHub className="h-4 w-4 shrink-0" />
+          </a>
+        </div>
       </div>
     </footer>
   );

@@ -17,11 +17,28 @@
  */
 
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { extname, join } from "node:path";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
 const SALIDA = join(RAIZ, "out");
+
+/*
+  Basura de macOS que no tiene por que viajar al servidor.
+
+  `.DS_Store` guarda como se ven las carpetas en el Finder, y de paso la lista
+  de archivos que hay dentro. Publicado, le regala a cualquiera el inventario
+  de un directorio —incluidos archivos que no estan enlazados desde ninguna
+  pagina—. No es un agujero, pero es informacion que se da gratis y no cuesta
+  nada no darla. Ver §21 de docs/MEJORAS.md.
+*/
+const BASURA = new Set([".DS_Store", "Thumbs.db", "desktop.ini"]);
 
 /** Lo que comprime bien. Las fotos ya vienen comprimidas: volver a pasarlas
  *  las deja más grandes. */
@@ -45,11 +62,18 @@ const MINIMO = 1024;
 function* recorrer(dir) {
   for (const entrada of readdirSync(dir)) {
     const ruta = join(dir, entrada);
+    // Se borra al pasar, no en una segunda vuelta: ya estamos parados encima.
+    if (BASURA.has(entrada)) {
+      rmSync(ruta, { force: true });
+      borrados += 1;
+      continue;
+    }
     if (statSync(ruta).isDirectory()) yield* recorrer(ruta);
     else yield ruta;
   }
 }
 
+let borrados = 0;
 let archivos = 0;
 let crudo = 0;
 let comprimido = 0;
@@ -86,6 +110,7 @@ if (archivos === 0) {
 }
 
 console.log(
+  (borrados ? `precomprimir: ${borrados} archivo(s) de basura del sistema borrados\n` : "") +
   `precomprimir: ${archivos} archivos, ${kb(crudo)} a ${kb(comprimido)} ` +
     `con Brotli (${((1 - comprimido / crudo) * 100).toFixed(0)}% menos)`,
 );

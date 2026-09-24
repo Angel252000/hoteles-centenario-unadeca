@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 /**
@@ -8,8 +9,17 @@ import { useEffect } from "react";
  * Va montado una vez en el layout. Marcar cada elemento con su propio
  * observador costaría un componente de cliente por ficha; así el JavaScript
  * que viaja es este archivo y nada más.
+ *
+ * Atado a `usePathname()` a proposito. En el App Router el layout NO se vuelve
+ * a montar al navegar entre paginas, asi que con la lista de dependencias
+ * vacia el efecto corria una sola vez: al volver a la portada desde una ficha,
+ * React pintaba nodos nuevos que no observaba nadie y los once bloques se
+ * quedaban en `opacity: 0` —la pagina entera en blanco hasta recargar—.
+ * Ver §19 de `docs/MEJORAS.md`.
  */
 export function ObservadorReveal() {
+  const ruta = usePathname();
+
   useEffect(() => {
     const elementos = document.querySelectorAll<HTMLElement>("[data-reveal]");
 
@@ -46,7 +56,7 @@ export function ObservadorReveal() {
 
     elementos.forEach((el) => observador.observe(el));
     return () => observador.disconnect();
-  }, []);
+  }, [ruta]);
 
   return null;
 }

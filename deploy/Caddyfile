@@ -30,11 +30,17 @@ SITIO {
 		Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
 		Cross-Origin-Opener-Policy same-origin
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Cross-Origin-Resource-Policy same-origin
+		# Defensa heredada para navegadores sin `frame-ancestors`.
+		X-Frame-Options DENY
 
 		# `frame-ancestors 'none'` es lo que impide que otro sitio enmarque
-		# este. El `'unsafe-inline'` de `script-src` no se puede quitar: son
-		# 165 scripts en línea distintos entre las trece páginas, la carga de
-		# React. Ver la sección 15 de docs/MEJORAS.md.
+		# este. `frame-src` sigue permitiendo youtube-nocookie y vimeo: esta
+		# copia conserva la franja del video del Centenario, así que el
+		# permiso está en uso.
+		# El `'unsafe-inline'` de `script-src` no se puede quitar: son 165
+		# scripts en línea distintos entre las trece páginas, la carga de
+		# React. Ver §15 y §21 de docs/MEJORAS.md.
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'"
 
 		# Caddy anuncia su nombre por defecto. Un atacante que no sabe qué

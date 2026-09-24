@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 /**
@@ -21,8 +22,15 @@ import { useEffect } from "react";
  * es exactamente como se comportaba antes de que esto existiera—. Al revés
  * —empezar en `"no"` y encender por JavaScript— una falla dejaría la banda
  * congelada en la primera foto y nadie sabría por qué.
+ *
+ * Tambien atado a `usePathname()`, por la misma razon que
+ * `<ObservadorReveal>`: el layout no se remonta al navegar. Aca el sintoma es
+ * mas leve porque falla abierto —la banda se queda animando siempre en vez de
+ * pararse fuera de pantalla—, pero es gasto de bateria sin motivo.
  */
 export function ObservadorEnVista() {
+  const ruta = usePathname();
+
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
 
@@ -50,7 +58,7 @@ export function ObservadorEnVista() {
 
     elementos.forEach((el) => observador.observe(el));
     return () => observador.disconnect();
-  }, []);
+  }, [ruta]);
 
   return null;
 }

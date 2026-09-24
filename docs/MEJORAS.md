@@ -360,9 +360,9 @@ Si esa se va a hacer, la fecha entra ahí y esta no se implementa aparte.
 
 ### 2.5 Reestructurar la portada
 
-- [ ] Conseguir los tres archivos: logo, imagen del Centenario, video
+- [ ] Conseguir los tres archivos que faltan: logo, imagen del Centenario y
+      video — esta copia conserva el bloque del video, ver §18
 - [ ] Escribir los tres puntos clave definitivos (hay texto provisional)
-- [ ] Decidir de dónde sale el video
 - [x] Implementar
 - [x] Verificar con capturas a 1440 y 390
 
@@ -2646,6 +2646,787 @@ comprobar ese valor antes de creerle a una medición de animación.
   commit from Create Next App»—, la paleta crema anterior al 26 de agosto y
   todo el trabajo sin commitear; se confirmó que su `MEJORAS.md` (887 líneas)
   era un subconjunto del de acá (2357) antes de moverla.
+
+## 18. El video no llega a tiempo — NO se aplica en esta copia (21 de septiembre)
+
+- [x] Decidir qué se trae de la copia trabajada y qué no
+- [x] Conservar la franja del evento con su espacio de video intacto
+- [x] Conservar `frame-src` con YouTube y Vimeo en los tres servidores
+- [ ] Conseguir el video del Centenario (sigue abierto en §2.5)
+
+### Qué se decidió
+
+La copia paralela del proyecto retiró el bloque de video de la franja del
+evento: el archivo no llegaba a tiempo y el marcador «pendiente» quedaba a la
+vista. **Acá no.** El cuadro donde va el video se queda donde está, con su
+medida y su posición, porque el video sí va a existir y reservar el espacio es
+justamente lo que evita que la maqueta se mueva el día que aparezca.
+
+En consecuencia:
+
+- `puntos-video.tsx` **no** se renombra a `puntos-evento.tsx` ni pierde su
+  función `Video()`. La franja sigue en dos columnas con el video a la derecha.
+- `medios.video` sigue siendo el campo que alimenta ese bloque, no un campo
+  documentado sin uso.
+- El `EspacioPendiente` de la portada **sigue en pie**, y con él el único
+  rótulo de pendiente de la página. Es el precio consciente de la decisión.
+- La directiva `frame-src` de la CSP **mantiene** `youtube-nocookie` y
+  `vimeo`, los dos destinos que `medios.video` puede tomar. Cerrarla a `'none'`
+  —como hizo §21 en la otra copia— rompería el video el día que se incruste.
+
+### La contra
+
+Se publica con un hueco rotulado «Video del Centenario — mp4 propio de hasta
+30 MB, o enlace de incrustar de YouTube o Vimeo» a la vista de cualquiera que
+entre. Eso le dice al visitante que la página está incompleta, y es un costo
+real, no una molestia estética.
+
+Se asume a propósito: la alternativa era desarmar la franja y volver a armarla
+cuando llegue el archivo, con el riesgo de que el rediseño de dos columnas de
+texto se quede por inercia y el video nunca vuelva a tener lugar. El pendiente
+es visible y por eso presiona; un hueco cerrado no presiona a nadie.
+
+La salida, si se acerca la fecha de publicación sin video, es aplicar §18 tal
+como está escrito en la otra copia —está probado y el commit existe—, no
+improvisar algo nuevo con prisa.
+
+### Lo que sí se trajo
+
+Todo lo demás de esa copia: §19 (bug de la portada en blanco), §20 (hoteles
+llenos), §21 (cabeceras de seguridad, menos el cierre de `frame-src`), §22
+(calidad de las fotos) y §23 (el visor). Las secciones siguientes son ese
+trabajo, tal como se escribió allá.
+
+
+## 19. La portada queda en blanco al volver atrás (18 de septiembre)
+
+- [x] Reobservar los `[data-reveal]` en cada cambio de ruta
+- [x] Lo mismo para `[data-en-vista]`
+- [x] Comprobar en el navegador: ir a una ficha, volver, y que la portada se vea
+
+### Qué pasa hoy
+
+**La portada entera se queda invisible al volver atrás.** Reproducción:
+
+1. Abrir `/`
+2. Hacer clic en cualquier «Ver hotel»
+3. Volver atrás —con el botón del navegador o con el enlace de la marca—
+
+Resultado: los **once bloques** con `data-reveal` se quedan en `opacity: 0`.
+Son los tres puntos del evento y **las diez fichas de hotel**. La página existe,
+mide 724 px por ficha, ocupa su lugar en el desplazamiento, y no se ve nada.
+
+Medido en el navegador con el sitio corriendo:
+
+```
+urlTrasVolver: "/"     totalPortada: 11     marcadosVisible: 0
+opacidad computada de las diez fichas: "0"
+```
+
+### Por qué
+
+`globals.css` deja `[data-reveal]` en `opacity: 0` y es `ObservadorReveal` quien
+los marca. Ese observador hace `document.querySelectorAll` **una sola vez**,
+dentro de un `useEffect` con lista de dependencias vacía.
+
+En el App Router de Next el layout **no se vuelve a montar** al navegar entre
+páginas: se monta una vez y sobrevive a todos los cambios de ruta. Así que el
+efecto corre en la primera carga, observa los once bloques de ese momento, y
+cuando React reemplaza el árbol por el de la ficha y luego por el de la portada
+otra vez, los nodos son **nuevos** y no los observa nadie.
+
+Nada los rescata después: `prefers-reduced-motion` está en `false` en un equipo
+normal, y el `<noscript>` no aplica porque el JavaScript sí cargó. El único
+camino de vuelta es recargar con F5.
+
+> Es un caso de manual de «funciona en la primera carga». Con recarga completa
+> nunca aparece — y recargar es justo lo que uno hace al ver la página en blanco,
+> lo que lo vuelve casi invisible para quien lo prueba a mano.
+
+### Cómo se hace
+
+Atar el efecto a la ruta con `usePathname()`:
+
+```tsx
+const ruta = usePathname();
+useEffect(() => { … }, [ruta]);
+```
+
+Cada cambio de ruta desconecta el observador viejo —lo hace la función de
+limpieza que ya existe— y crea uno nuevo sobre el árbol recién pintado.
+
+Lo mismo en `ObservadorEnVista`, aunque ahí el síntoma es mucho más leve:
+falla abierto, así que la banda del Centenario se queda animando siempre en
+lugar de pararse fuera de pantalla. No se ve roto, solo gasta batería.
+
+### La contra
+
+Un observador nuevo por cada navegación, en vez de uno para toda la sesión.
+El costo real es despreciable —`disconnect()` libera el anterior y son once
+elementos— y a cambio se gana que la página se vea, que no es negociable.
+
+La alternativa era un `MutationObserver` sobre el `<body>`, que atraparía
+cualquier cambio del DOM y no solo los de ruta. Se descarta: vigilar todas las
+mutaciones para resolver un problema que solo ocurre al navegar es pagar de más
+y, encima, más difícil de razonar.
+
+### Cómo se verifica
+
+En el navegador, con el sitio corriendo: ir a una ficha, volver, y comprobar
+que `[data-reveal="visible"]` son once de once. Antes del arreglo son cero.
+
+
+## 20. Hoteles que se llenan (18 de septiembre)
+
+- [x] Campo `lleno` en el tipo `Hotel`, obligatorio
+- [x] Marcar Hotel Alajuela Costa Rica Airport
+- [x] Banda sobre la foto, en la parrilla y en la ficha
+- [x] Que el hotel se siga pudiendo abrir y leer
+- [x] Verificar sobre el HTML generado
+
+### Qué pasa hoy
+
+**Hotel Alajuela Costa Rica Airport ya no tiene lugar** y la página lo muestra
+igual que a los otros nueve: misma foto, mismo precio, mismo «Ver hotel». Quien
+compara lo va a incluir en su decisión y va a escribir para reservar algo que no
+existe.
+
+No alcanza con sacarlo de la lista. Su tarifa sigue siendo información útil
+—sirve de referencia de precio, y la comisión necesita ver lo que se cotizó—, y
+alguien que ya lo tenía elegido merece encontrar por qué dejó de aparecer en
+lugar de pensar que la página se equivocó. **Se sigue pudiendo abrir y leer
+entero: lo que cambia es que se sepa de entrada que está lleno.**
+
+### Cómo se hace
+
+1. Campo en `src/lib/datos/tipos.ts`, obligatorio y sin `?`:
+   ```ts
+   lleno: boolean;
+   ```
+   Como `impuestos` en §2.1: si fuera opcional, un hotel nuevo entraría sin que
+   nadie decidiera su estado y se mostraría como disponible por omisión — que es
+   justo el error caro.
+2. `true` en `alajuela-airport`, `false` en los otros nueve.
+3. **Banda sobre la foto**, no un chip en la esquina. Las dos esquinas ya están
+   ocupadas —estrellas arriba a la izquierda, «Con elevador» arriba a la
+   derecha— y un tercer distintivo del mismo tamaño se leería como una
+   característica más. Estar lleno no es una característica: **es un estado que
+   manda sobre todo lo demás**, y necesita el peso visual que corresponde.
+4. La foto se atenúa debajo de la banda. Es el recurso que ya usa cualquier
+   catálogo para «agotado», y se entiende sin leer.
+5. En `ink` con texto `bone`, no en rojo. El sitio no tiene rojo y no hay por
+   qué inventarlo: el hotel no hizo nada malo, y una alarma roja sugiere error
+   de la página más que hotel completo.
+6. En la ficha de detalle, la misma banda sobre la galería.
+
+### La contra
+
+Una banda atravesando la foto es lo más agresivo que va a tener la parrilla, y
+rompe la calma del resto de la página. También desequilibra la fila: entre
+nueve fotos limpias, la décima grita.
+
+Se asume porque la alternativa es peor. Un distintivo discreto que la mitad de
+la gente no ve termina en correos pidiendo un hotel sin lugar, y en alguien
+sosteniendo un plan de viaje sobre una habitación que no existe. **Acá lo
+molesto es lo correcto.**
+
+Queda una duda abierta: si se llenan tres o cuatro hoteles, cuatro bandas en la
+parrilla van a verse mal. Llegado ese caso conviene moverlos al final de la
+lista en vez de dejarlos intercalados — pero eso se decide cuando pase, no ahora
+con un solo caso.
+
+### Cómo se verifica
+
+En `out/`: «Hotel lleno» aparece en `index.html` y en
+`hoteles/alajuela-airport.html`, y en ningún otro. El enlace «Ver hotel» de esa
+ficha sigue existiendo y su página sigue generándose.
+
+
+## 21. Repaso de seguridad antes de publicar (18 de septiembre)
+
+- [x] Buscar credenciales en el repositorio y en lo publicado
+- [x] Reparar la herencia de cabeceras en nginx
+- [ ] ~~Cerrar el `frame-src` que quedó del video~~ — no aplica: el video se queda (§18)
+- [x] Sumar `X-Frame-Options` y `Cross-Origin-Resource-Policy`
+- [x] Borrar la basura del sistema de `out/` en el build
+- [ ] Decidir qué hacer con el correo nominal publicado
+- [ ] Endurecer el acceso al servidor (fuera del repositorio)
+
+### Lo que ya estaba bien
+
+Vale nombrarlo, porque es la mayor parte:
+
+- **No hay credenciales.** Ni un `.env` en el proyecto —es un sitio estático
+  sin back-end— y `.gitignore` cubre `.env*` por si alguna vez lo hay.
+- **No hay `source maps`** en `out/`: el código fuente no viaja.
+- **`/comision` no se publica.** Verificado: ni el archivo ni rastros del texto.
+- **No hay formularios.** `form-action 'none'` en la CSP y nada que enviar: no
+  existe superficie de inyección por entrada de usuario.
+- **TLS 1.2 y 1.3 nada más**, con OCSP stapling y HSTS a un año.
+- **`server_tokens off`** y `-Server` en Caddy: no se anuncia qué corre detrás.
+
+### 🔴 Lo grave: las cabeceras de nginx no se aplicaban
+
+En nginx, **`add_header` no se hereda si el bloque hijo declara el suyo**. Los
+tres `location` del sitio declaran `Cache-Control`:
+
+```nginx
+location / {
+    add_header Cache-Control "..." always;   # ← descarta TODO lo de arriba
+    try_files $uri $uri.html $uri/index.html =404;
+}
+```
+
+Resultado: **ninguna respuesta llevaba CSP, HSTS, `nosniff`, `Referrer-Policy`,
+`Permissions-Policy` ni COOP.** Estaban escritas en el bloque `server`, se leían
+bien en el archivo, y no llegaban al navegador en ningún pedido — incluidas las
+páginas HTML.
+
+Es el tipo de fallo que no da error, no rompe nada visible y solo se descubre
+mirando las cabeceras de una respuesta real o conociendo esa regla de nginx.
+Caddy y Apache no tienen el problema: ahí sí se heredan.
+
+**Arreglo:** las cabeceras pasan a `deploy/cabeceras-seguridad.conf` y se
+incluyen con `include` en el bloque `server` **y en cada `location`**. Cuatro
+inclusiones. Repetirlas a mano cuatro veces invitaba a que la quinta se
+olvidara.
+
+### Lo demás que se cerró
+
+| Hallazgo | Riesgo | Arreglo |
+|---|---|---|
+| `frame-src` permite YouTube y Vimeo | **Sin cambio en esta copia.** El video no se retiró (§18), así que el permiso sigue en uso; cerrarlo rompería la incrustación | `frame-src https://www.youtube-nocookie.com https://player.vimeo.com` en los tres servidores |
+| Sin `X-Frame-Options` | Navegadores viejos no entienden `frame-ancestors` | `DENY` en los tres |
+| Sin `Cross-Origin-Resource-Policy` | Otros sitios podían incrustar las fotos | `same-origin` en los tres |
+| `.DS_Store` publicado | Regala el inventario de un directorio, incluidos archivos no enlazados | `scripts/precomprimir.mjs` lo borra al recorrer `out/` |
+| nginx sin `autoindex off` | Listado de directorio si alguna ruta queda sin índice | Declarado explícitamente |
+
+### Lo que queda abierto, y es decisión de la comisión
+
+**Correos y teléfonos publicados.** En las fichas hay **cinco teléfonos y cinco
+correos de hoteles**, más el de la comisión. Es información de contacto que el
+sitio existe para dar, así que publicarla es correcto. Con una excepción que
+conviene mirar:
+
+```
+melany.ramirez@marriott.com
+```
+
+Es el correo **nominal de una persona**, no una casilla de reservas como
+`reserve@hamptoncr.com` o `reservationscr@marriott.com`. Publicado en una página
+abierta, queda expuesto a los rastreadores de spam para siempre, y la persona no
+eligió eso.
+
+> **Recomendación:** pedirle a Courtyard la casilla genérica de reservas y
+> reemplazarlo. Si no hay otra, al menos que Melany lo sepa antes de publicar.
+> No es un fallo técnico: es una cortesía que cuesta un correo.
+
+### Lo que este repaso NO cubre
+
+Todo lo anterior es **el sitio**. «Que nadie pueda entrar al servidor» es otra
+cosa y vive fuera de este repositorio:
+
+1. **SSH con llave, nunca con contraseña.** `PasswordAuthentication no` y
+   `PermitRootLogin no` en `/etc/ssh/sshd_config`. Es, con diferencia, lo que
+   más entradas evita.
+2. **Cortafuegos cerrado por omisión**: abrir 80, 443 y el puerto de SSH, y
+   nada más. `ufw default deny incoming`.
+3. **`fail2ban`** contra la fuerza bruta en SSH.
+4. **Actualizaciones automáticas de seguridad** del sistema.
+5. **El sitio no necesita permisos de escritura.** `/var/www/hoteles` con dueño
+   `root` y lectura para el usuario del servidor: aunque alguien entrara por el
+   servidor web, no podría modificar los archivos.
+6. **Publicar con `rsync` sobre SSH**, nunca con FTP.
+
+Son seis cosas y ninguna es opcional en una máquina expuesta a internet.
+
+### Cómo se verifica
+
+Con el sitio ya publicado:
+
+```bash
+curl -sI https://SITIO | grep -iE "content-security|strict-transport|x-content-type|x-frame|referrer|permissions"
+curl -sI https://SITIO/opt/centenario/01-1600.avif | grep -ci "content-security-policy"
+```
+
+El segundo tiene que devolver **1**, no 0: es justo el caso que el fallo de
+herencia dejaba sin cabeceras.
+
+
+## 22. Calidad de las fotos de hotel (19 de septiembre)
+
+- [x] Subir la calidad de `public/hoteles` de q50/q75 a q65/q82
+- [x] Regenerar variantes y medir el costo real
+- [ ] Anotar qué hoteles necesitan fotos nuevas de verdad
+
+### Qué pasa hoy
+
+Las fotos se ven blandas, y **no es culpa del compresor**. El optimizador está
+bien hecho: `withoutEnlargement: true` y descarta los anchos mayores que el
+original, así que nunca amplía. El techo es otro.
+
+**Los originales son chicos.** De los diez hoteles, nueve tienen fotos por
+debajo de 800 px de ancho:
+
+| Hotel | Ancho mínimo | Hotel | Ancho mínimo |
+|---|---:|---|---:|
+| backpackers | **375** | tucan | **391** |
+| courtyard | **375** | hotel-1915 | **478** |
+| fairfield | **375** | park-view | **515** |
+| la-guaria | **554** | alajuela-airport | **615** |
+| hilton-garden-inn | **640** | hampton-inn | 1600 ✅ |
+
+Una ficha de la parrilla mide unos 490 px de CSS en escritorio. **En cualquier
+pantalla retina eso pide 980 px reales**, y una foto de 375 px la estira el
+navegador a más del doble. Ahí no hay compresión que valga: falta información.
+
+Y hay un segundo efecto que empeora el primero: **en una imagen chica los
+artefactos de compresión se notan más**, porque hay menos píxeles donde
+esconderlos. Aplicar q50 —pensado para fotos grandes— a un original de 375 px
+es justo el peor caso.
+
+### Cómo se hace
+
+Subir la calidad de `public/hoteles` de `{ avif: 50, webp: 75 }` a
+`{ avif: 65, webp: 82 }`, por carpeta, con el mismo mecanismo que ya usa
+`public/centenario` desde §13.
+
+Medido sobre cuatro fotos a 800 px en AVIF:
+
+| Foto | Original | q50 | **q65** | q72 |
+|---|---:|---:|---:|---:|
+| backpackers/01 | 36 KB | 12 KB | **~18 KB** | 21 KB |
+| tucan/01 | 45 KB | 15 KB | **~23 KB** | 27 KB |
+| park-view/01 | 48 KB | 14 KB | **~20 KB** | 25 KB |
+| hampton-inn/01 | 572 KB | 36 KB | **~60 KB** | 82 KB |
+
+En las fotos chicas cuesta unos **8 KB más cada una**. Es barato justamente
+porque son chicas — el original entero pesa 36 KB.
+
+Se elige q65 y no q72: entre las dos la diferencia a ojo es mínima y q72 casi
+duplica el peso del único hotel que sí tiene fotos buenas.
+
+### La contra
+
+El sitio engorda. Sobre una portada de 10.8 KB con Brotli el HTML no cambia,
+pero las fotos sí, y son la mayor parte de los 20 MB de `out/`. Quien entre con
+datos móviles va a bajar más.
+
+Se asume porque **la página existe para que alguien elija dónde dormir**, y una
+foto donde no se distingue si la habitación está limpia no cumple esa función.
+El peso extra es de unos kilobytes por foto, no de megabytes.
+
+> **Lo que esto NO arregla.** Subir la calidad mejora los artefactos, no la
+> resolución. Una foto de 375 px seguirá viéndose blanda en una pantalla
+> retina, porque los píxeles que faltan no los inventa ningún compresor.
+>
+> **La mejora de verdad es pedir fotos nuevas a los nueve hoteles**, a 1600 px
+> de ancho como mínimo. Es una gestión, no código, y va a la sección 1 como
+> tarea de contenido. Hampton Inn ya las mandó así: se nota.
+
+### Qué costó, medido
+
+`public/opt` pasó de **5.8 MB a 7.2 MB**: 1.4 MB más en 158 variantes, unos
+**9 KB por variante**. Los originales pesan 9.14 MB, así que las variantes
+siguen pesando menos que las fotos de las que salen.
+
+### Cómo se verifica
+
+`du -sh public/opt` antes y después, y mirar la parrilla al 100% de zoom en una
+pantalla retina. La diferencia tiene que verse en las paredes lisas y en los
+bordes de los muebles, que es donde q50 dejaba bloques.
+
+
+## 23. El visor, como el de cualquier hotel (19 de septiembre)
+
+- [x] Fondo neutro en vez del azul de marca
+- [x] Quitar los botones «Anterior» y «Siguiente»
+- [x] Dejar solo «Volver»
+- [x] Arrastrar con el dedo y con el mouse
+- [x] Comprobar que el teclado sigue funcionando
+
+### Qué pasa hoy
+
+El visor a pantalla completa usa `bg-ink/97`: el **azul marino de la marca**
+al 97% de opacidad. Y abajo lleva una barra con dos botones enmarcados,
+«Anterior» y «Siguiente», del mismo peso visual que «Volver».
+
+Los dos son decisiones de marca aplicadas donde no van. Cuando alguien abre una
+foto a pantalla completa está mirando **la habitación**, no el sitio: todo lo
+que no sea la foto compite con ella. El azul tiñe los blancos de las sábanas y
+las paredes —que es justo lo que la gente evalúa— y tres botones enmarcados
+rodean la imagen de cromo.
+
+Ningún visor de hotel funciona así. El patrón que todo el mundo ya conoce es
+fondo casi negro, la foto, y se arrastra.
+
+### Cómo se hace
+
+1. **Fondo `#0d0d0f` al 98%**, neutro. No negro puro: un gris muy oscuro deja
+   respirar el borde de la foto y evita el corte duro contra fotos oscuras.
+   Sobre todo, **no tiñe**: el blanco de una sábana se ve blanco.
+2. **Se va la barra de abajo entera** con sus dos botones. El pie de foto y el
+   contador se mantienen, en texto suelto sobre el fondo.
+3. **Queda «Volver»**, arriba a la derecha, que es el único control que alguien
+   necesita encontrar sin buscarlo.
+4. **Arrastrar sustituye a los botones.** Ya existía el gesto táctil; pasa de
+   eventos `Touch` a eventos `Pointer`, que cubren dedo, mouse y lápiz con el
+   mismo código. En escritorio el cursor pasa a `grab` y a `grabbing` mientras
+   se arrastra: es lo que le dice a alguien con mouse que ahí se arrastra.
+
+### La contra
+
+**Se pierden los objetivos visibles de «siguiente» y «anterior».** Quien no
+sepa que se arrastra puede quedarse en la primera foto sin darse cuenta de que
+hay más, y el contador «1 / 3» de arriba es una pista discreta, no una
+instrucción.
+
+Se asume porque el gesto de arrastrar en una galería a pantalla completa es
+universal —lo tiene cualquier aplicación de fotos del teléfono— y porque el
+cursor `grab` lo anuncia en escritorio. Si aun así alguien se queda trabado, la
+salida no es devolver los botones grandes: es una flecha discreta que solo
+aparezca al mover el mouse.
+
+**Lo que NO se pierde: el teclado.** Escape cierra y las flechas ← → cambian de
+foto, exactamente igual que antes. Eso es lo que hace que quitar los botones
+sea aceptable y no una pérdida de accesibilidad: el control sigue existiendo
+para quien navega sin puntero.
+
+### Cómo se verifica
+
+Abrir una foto y comprobar cuatro cosas: el fondo no tiñe de azul, no hay
+botones abajo, se puede arrastrar con el mouse y con el dedo, y las flechas del
+teclado siguen cambiando de foto.
+
+
+## 24. Sacar la voz interna de la página (21 de septiembre)
+
+- [x] Quitar toda mención de impuestos de la página pública
+- [x] Quitar el almuerzo del Hampton Inn: la tarifa no lo incluye
+- [x] Quitar «La opción más cara del documento y la de mejor acabado» (Hotel 1915)
+- [x] Quitar «El correo no dice cuántas habitaciones tiene…» (Hilton Garden Inn)
+- [x] Ocultar los specs «sin dato» en vez de escribirlos
+- [x] REVERTIDO: la limpieza general de notas, resúmenes y pie
+
+### Corrección del 21 de septiembre — se había cortado de más
+
+La primera pasada se llevó **toda** la voz de cuaderno: las cuatro
+`capacidadNota` que citan la fuente, «Ojo: la tarifa de convenio no aplica a
+grupos de 8 habitaciones o más», «Se cotiza en conjunto con el Tucán», los
+detalles de las filas de tarifa, el «Incluido — el hotel no especificó de qué
+tipo» y el pie que firma «Documento interno de trabajo».
+
+No era lo pedido. Lo pedido eran tres cosas concretas, y el resto de las
+explicaciones **son útiles para quien reserva**: que el convenio tope en siete
+habitaciones cambia la decisión de un grupo de 84 personas, y que el Park View
+y el Tucán se coticen juntos explica por qué sus precios van de la mano.
+Cortarlas dejó descripciones de una línea que no dicen nada.
+
+Todo eso está restaurado. Se van solo:
+
+| Qué | Dónde | Por qué |
+|---|---|---|
+| Toda mención de impuestos | 4 hoteles: línea del precio, tarjeta, panel, filas de tarifa, consultas | Decisión del dueño de la página |
+| «La opción más cara del documento y la de mejor acabado» | Hotel 1915, resumen | Le dice caro a un hotel que se está promocionando |
+| «El correo no dice cuántas habitaciones tiene; las 250 del salón Quetzal son capacidad de evento» | Hilton Garden Inn, `capacidadNota` | Nota de auditoría dentro de la descripción |
+| El almuerzo | Hampton Inn, resumen y desayuno | La tarifa no lo incluye |
+
+**Sí queda fuera, aparte de esas cuatro:** los specs «Capacidad sin dato»,
+«Clima sin dato» y «Acceso sin dato», que no son una explicación sino un
+renglón que dice que no se sabe nada. Si se quieren de vuelta, es una línea.
+
+### Qué pasa hoy
+
+La página se escribió mientras se armaba la cotización y quedó con algunas
+frases que hablan como el cuaderno de trabajo y no como una página que
+promociona hoteles. Tres llegaron marcadas en capturas: «La opción más cara
+del documento», la línea de impuestos del Hampton y la nota del salón Quetzal
+del Hilton.
+
+### Cómo se hace
+
+1. **Impuestos: fuera de la página.** Los tres lugares que los mostraban —la
+   línea bajo el precio grande, el «+ impuestos» de la tarjeta en la parrilla
+   y el del panel de reservas—, los detalles de las filas de tarifa, y la
+   mención en el bloque de consultas. Los campos `impuestos` e `impuestosNota`
+   se conservan en los datos, sin uso en la interfaz, como `medios.video`.
+2. **Las tres frases marcadas se borran**, y nada más. El resto de las notas
+   —capacidad, tope de habitaciones, cómo se cotiza cada hotel— se queda: es
+   información que le sirve a quien reserva.
+3. **Hampton Inn pierde el almuerzo**, en el resumen y en la línea de
+   desayuno: la tarifa no lo incluye.
+4. **Los specs sin dato no se pintan.** Si no hay capacidad, clima o acceso,
+   la viñeta no aparece.
+
+### La contra — y es seria
+
+Cuatro hoteles —Hampton Inn, Hilton Garden Inn, Courtyard y Fairfield—
+cotizan **sin impuestos**. Sin ninguna marca, sus precios se leen como finales
+y no lo son: el Courtyard fija un 13%, los otros tres no dan el porcentaje.
+Alguien puede comparar $493 del Hampton con $464 de otro hotel que sí los
+incluye y elegir mal.
+
+Se hace igual porque **es una decisión del dueño de la página**, tomada
+sabiendo esto: la página es promocional y quien reserva confirma la tarifa por
+teléfono o correo con el hotel, que es lo que el bloque de consultas ya pide
+hacer. La honestidad se sostiene en ese canal, no en la letra chica.
+
+Si más adelante se quiere recuperar la advertencia sin romper la presentación,
+el camino más barato es un «+ imp.» de una sola palabra junto al precio, sin
+explicación: los campos de datos siguen cargados y el cambio es de una línea.
+
+### Cómo se verifica
+
+Sobre el build: `grep -ri "impuesto\|el documento\|el correo dice\|sin dato"
+out/hoteles/` no devuelve nada en las diez fichas, y las fichas del Hampton no
+mencionan almuerzo. Más `pnpm typecheck` y `pnpm lint` limpios, y las fichas
+revisadas en el navegador.
+
+
+## 25. Las fotos se ven blandas por el `srcset`, no por el compresor (21 de septiembre)
+
+- [x] Generar una variante al ancho nativo cuando el original no cae en un escalón
+- [x] Enfocar levemente solo las variantes que se reducen de verdad
+- [x] Subir el `effort` de AVIF y WebP: mejor compresión por el mismo peso
+- [x] Medir el antes y el después, por hotel
+- [x] Barrer las variantes huérfanas que deja un cambio de escala
+
+### Qué pasa hoy
+
+§22 subió la calidad de compresión de q50/q75 a q65/q82 y concluyó que el
+techo era el material. **Era solo la mitad del problema.** La otra mitad está
+en `scripts/optimizar-imagenes.mjs`:
+
+```js
+const anchos = anchosDe(ruta).filter((a) => a <= meta.width);
+if (anchos.length === 0) anchos.push(meta.width);
+```
+
+La escala es `[400, 800, 1600]`. Un original de 750 px no llega a 800, así que
+de ese filtro sale **un solo ancho: 400**. La foto de 750 px se publica
+recortada a 400 y los otros 350 px de información se tiran. El `if` solo
+rescata el ancho nativo cuando el original no llega ni a 400.
+
+Lo que eso significa en pantalla: la tarjeta de la parrilla mide unos 430 px
+CSS en escritorio; en una pantalla retina el navegador pide 860 px y lo mejor
+que hay en el `srcset` es 400. Se amplía al doble. Eso es exactamente el
+aspecto blando que se ve, y ninguna calidad de compresión lo arregla: los
+píxeles no están en el archivo.
+
+Afecta a **siete de los diez hoteles**: Courtyard y Fairfield (750), Park View
+(722), Alajuela Airport (616–698), Hilton Garden Inn (640), Tucán (574–666) y
+seis fotos del Hotel 1915 (478–565). Los que ya estaban bien son Hampton Inn y
+las tres grandes del 1915, que sí mandaron 1600 px, y Backpackers, que mandó
+375 y ya se publica nativo.
+
+### Cómo se hace
+
+1. **El ancho nativo entra siempre en la escala.** Se generan los escalones
+   que quepan, y además el ancho del original si no coincide con ninguno. Un
+   original de 750 px pasa a tener `400w` y `750w`; el navegador elige.
+   Sigue sin ampliarse nada: `withoutEnlargement` y el tope del original.
+2. **Enfoque suave, solo donde hubo reducción.** Al bajar de 750 a 400 el
+   remuestreo ablanda los bordes; un `sharpen` leve lo compensa. En la
+   variante de ancho nativo no se toca, porque no hubo remuestreo: enfocar
+   algo que no se redujo agrega halo y ruido.
+3. **`effort` más alto en los dos formatos.** AVIF por defecto usa 4 de 9 y
+   WebP 4 de 6. Subirlos hace el build más lento y entrega el mismo pixel en
+   menos bytes, que es lo que paga la variante nueva.
+
+### La contra
+
+Más archivos y más peso. Cada foto afectada suma dos variantes —AVIF y
+WebP— al ancho nativo, y son las variantes grandes, no las chicas. El build
+también tarda más por el `effort`.
+
+Se asume porque el peso extra lo paga exactamente quien lo aprovecha: el
+`srcset` hace que un teléfono siga bajando la de 400 px. La variante grande
+la pide el escritorio, que tiene el ancho de banda.
+
+Lo que esto **no** arregla: una foto de 375 px —Backpackers, y las 04/05 del
+Courtyard y las 03/04/05 del Fairfield— se va a seguir viendo blanda en
+retina. Ahí no hay píxeles que recuperar y la única salida sigue siendo pedir
+fotos de 1600 px, que sigue anotado como tarea de contenido desde §22.
+
+### Cómo se verifica
+
+Correr el optimizador y comparar el manifiesto `src/lib/imagen-variantes.ts`
+antes y después: los siete hoteles tienen que ganar un ancho. Más el peso de
+`public/opt` medido de verdad, y las fichas vistas en el navegador.
+
+### Resultado
+
+**30 fotos ganaron ancho.** Las que más: Courtyard y Fairfield de 400 a 750,
+Park View a 722, Alajuela Airport a 698, Hilton Garden Inn a 640, Tucán a 666,
+seis del Hotel 1915 entre 478 y 565, y la 01 del 1915 a 1024.
+
+`tucan/06` mide 402 px y quedó fuera a propósito: una variante de 402 al lado
+de la de 400 son dos archivos para dos píxeles. El corte está en 15% sobre el
+escalón anterior.
+
+`public/opt` pasa de **7,2 MB a 9,9 MB** en disco. Lo que viaja por visita no
+crece en la misma proporción: el `srcset` sigue mandando la de 400 al
+teléfono, y la grande solo la pide el escritorio, que la estaba ampliando al
+doble desde 400.
+
+El script ahora también **borra las variantes huérfanas**: cambiar la escala
+dejaba archivos que ya nadie declara en el `srcset` pero que igual viajaban al
+servidor.
+
+
+## 26. La ficha, como una página de hotel de verdad (21 de septiembre)
+
+- [x] Mosaico de una grande y dos al lado, en vez de una y cuatro
+- [x] Tira de miniaturas con el resto de las fotos
+- [x] Ubicación bajo el nombre, con enlace al mapa
+- [x] Los datos duros como chips con borde
+- [ ] Cargar las direcciones reales de los diez hoteles
+
+### Qué pasa hoy
+
+La referencia es una ficha de Booking: nombre, dirección con «Ver mapa»,
+mosaico de fotos grandes, tira de miniaturas y una fila de chips con lo que el
+hotel tiene. La ficha de acá tenía las piezas, pero repartidas de otra forma.
+
+- **El mosaico mostraba cinco fotos**: una grande y cuatro en un cuadrante.
+  Cada secundaria quedaba en un cuarto del mosaico —unos 300 px— y se pedía a
+  `25vw`. Con fotos de 375 a 750 px, mostrarlas chicas desperdicia lo único que
+  tienen. Y las que sobraban vivían detrás de un botón que hay que descubrir.
+- **La ubicación era «Alajuela, Costa Rica»** escrito a mano en el componente,
+  encima del nombre, sin forma de ver dónde queda.
+- **Los datos duros flotaban** separados por aire, sin contorno.
+
+### Cómo se hace
+
+1. **Una grande y dos al lado.** Cada secundaria pasa de un cuarto a algo más
+   de un tercio del mosaico y se pide a `38vw`. Las demás bajan a una tira de
+   hasta seis miniaturas, cada una abriendo el visor en su propia foto; si aun
+   así sobran, la última las anuncia con «N fotos más». En teléfono la tira no
+   aparece: el mosaico ya ocupa la pantalla y otra fila empuja el precio fuera
+   de vista.
+2. **Ubicación bajo el nombre**, con pin y enlace a Maps.
+3. **Chips con borde** para los datos duros, como bandera `chip` del
+   componente `Spec` y no como un cuarto componente parecido.
+
+### Lo que no se hace, y por qué
+
+**No se inventa la dirección.** Ninguna de las cotizaciones traía dirección de
+calle, y escribir una equivocada de un negocio real es peor que no escribirla:
+manda gente a otro lado. El enlace del mapa busca **por nombre de hotel**, que
+es un dato exacto que sí tenemos, y Maps resuelve el resto.
+
+Queda el campo `direccion` en el tipo `Hotel`, vacío. El día que lleguen las
+direcciones, se cargan ahí y la misma línea las muestra sin tocar código.
+
+### Cómo se verifica
+
+Las diez fichas en el navegador: mosaico de tres, tira con el resto, el enlace
+del mapa abriendo el hotel correcto. Más `pnpm typecheck` y `pnpm lint`.
+
+
+## 27. Toda tarifa dice por noche y por las cuatro noches (22 de septiembre)
+
+- [x] Las dos cifras en las diez fichas, en el mismo orden
+- [x] Las tarifas por persona se muestran para dos personas
+- [x] Las tarifas por persona dicen aparte cuánto sale una
+
+### Qué pasa hoy
+
+Cada hotel se leía en su propia unidad. Seis cotizan por habitación y cuatro
+por persona, y la tabla repetía esa diferencia sin resolverla:
+
+| Hotel | Decía |
+|---|---|
+| Courtyard | $612 · la habitación, 4 noches · $153 por noche |
+| Hotel 1915 | $188 · **una persona**, 4 noches · $47 **por persona / noche** |
+
+Los dos números grandes están uno debajo del otro en la misma página y no
+miden lo mismo. El de $188 parece la mitad de barato de lo que es, porque es
+una cabeza contra una habitación entera.
+
+### Cómo se hace
+
+`tarifaMostrada()` decide la ocupación de cada fila:
+
+- **Por habitación**: la habitación tal como el hotel la vende. No se
+  multiplica nada. Una sencilla cuesta lo que cuesta una sencilla; presentar
+  «dos sencillas» como si fueran «la habitación» sería mentir sobre lo que se
+  reserva.
+- **Por persona**: dos veces la tarifa, que es la canasta de dos personas con
+  la que el sitio compara hoteles desde §11. El Hotel 1915 pasa a decir
+  **$94 por noche · $376 las 4 noches · 2 personas**.
+
+Debajo de cada fila por persona va lo que sale una: `$47 por noche · $188 las
+4 noches`. Sin eso, el total de dos se lee como si fuera por cabeza — el mismo
+error, al revés.
+
+### La contra
+
+«Ocupación individual» del Hotel 1915 queda mostrando **$616 · 2 personas**,
+que son dos personas en dos habitaciones individuales, no dos en una. Es
+correcto y es lo que cuesta alojar a dos con esa tarifa, pero hay que leer el
+nombre de la fila para entenderlo. El renglón de «por persona» debajo lo
+aclara.
+
+La alternativa era inventar cuánta gente entra en cada habitación de los
+cuatro hoteles que cotizan por persona. La fuente no lo dice —las cuatro
+tarifas están cargadas con `personas: 1`, incluido un camarote de dormitorio
+compartido en Backpackers—, y multiplicar un camarote por dos y llamarlo
+«habitación» sería peor que la ambigüedad que queda.
+
+### Cómo se verifica
+
+Las 26 tarifas de las diez fichas, contra el cálculo hecho aparte: por
+habitación, precio × 4; por persona, precio × 2 × 4.
+
+
+## 28. La ficha de la parrilla, con el precio que engancha (22 de septiembre)
+
+- [x] El precio grande pasa a ser por persona, no el total de la estadía
+- [x] Agregar «Habitación doble» a esa cifra, en las diez fichas
+- [x] El total de las 4 noches baja de tamaño y de lugar
+
+### Qué pasa hoy
+
+La tarjeta de la parrilla abría con el total de la estadía completa —«$565 · 4
+noches · 2 personas»— en letra grande, y el precio por persona quedaba abajo
+del todo, en letra chica, junto al botón «Ver hotel». Es al revés de cómo se
+promociona un hotel en cualquier lado: la cifra que engancha es la de por
+persona, y el total es la letra chica que confirma la cuenta.
+
+### Cómo se hace
+
+Se intercambian tamaño y posición, sin tocar el cálculo — `dosPersonas.total`
+sigue siendo la misma canasta de siempre, `costoDosPersonas()`; esto es solo
+qué mitad de esa cifra se muestra grande y cuál chica.
+
+- **Arriba, grande:** `dosPersonas.total / 2` con la leyenda **«por persona ·
+  Habitación doble»**. La frase «Habitación doble» es fija en las diez
+  fichas, a propósito: no describe la tarifa real de cada hotel — eso lo
+  sigue diciendo la línea de abajo («En standard · dos camas full», «En
+  compartiendo habitación»...) —, es la aclaración estándar de que el precio
+  por persona asume ocupación de dos. Aplica igual a los diez hoteles, no
+  solo al Hilton de la captura.
+- **Abajo, chico:** el total de 4 noches, con la etiqueta «4 noches · 2
+  personas», en el mismo lugar y el mismo tamaño de letra donde antes vivía
+  el «Por persona».
+
+### La contra
+
+En Backpackers lo más barato para dos son dos camarotes en dormitorio
+compartido, no una habitación doble de verdad. La etiqueta grande dice
+«Habitación doble» igual, porque es la aclaración de ocupación (dos
+personas), no una descripción del cuarto — y la línea de abajo («En
+habitación compartida · camarote...») sigue ahí para decir la tarifa real.
+Sin esa línea, la etiqueta grande sí engañaría.
+
+### Cómo se verifica
+
+Las diez tarjetas de la parrilla en escritorio (1440) y en teléfono (390):
+arriba «$XXX por persona · Habitación doble», abajo «4 noches · 2 personas
+$YYY», con YYY = XXX × 2 en todos los casos. Capturas antes/después en
+`.playwright-cli/`.
+
 
 ## Contactos
 

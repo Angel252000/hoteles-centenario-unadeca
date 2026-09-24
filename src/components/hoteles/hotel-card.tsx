@@ -12,8 +12,6 @@ const textoAire = {
   si: "A/C",
   parcial: "A/C parcial",
   no: "Ventilador",
-  // El hotel no lo informó. No es lo mismo que "no tiene".
-  null: "Clima sin dato",
 } as const;
 
 const icono = "h-4 w-4 shrink-0";
@@ -68,6 +66,26 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
             />
           </span>
         )}
+        {/*
+          Banda de «lleno». Va sobre la foto y no en una esquina: las dos
+          esquinas ya son de las estrellas y del elevador, y un tercer chip del
+          mismo tamano se leeria como una caracteristica mas. Estar lleno no es
+          una caracteristica, es un estado que manda sobre el resto.
+
+          `pointer-events-none` para que la banda no se coma el clic: el hotel
+          se sigue abriendo y leyendo entero. Ver §20 de docs/MEJORAS.md.
+        */}
+        {hotel.lleno && (
+          <>
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-ink/45"
+            />
+            <span className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 bg-ink/90 py-2.5 text-center text-sm font-semibold tracking-[0.18em] text-bone uppercase shadow-lift">
+              Hotel lleno
+            </span>
+          </>
+        )}
         {hotel.caracteristicas.elevador === true && (
           /* Cobalto, no oro: es una característica, no un precio ni la
              etiqueta de nivel —esa sigue en `bg-ink`—. */
@@ -104,34 +122,34 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
         </p>
 
         {/*
-          El precio grande es la estadía completa de dos personas, no la
-          persona-noche que se mostraba antes. La persona-noche era comparable
-          pero nadie reserva esa unidad: obligaba a multiplicar por cuatro y
-          por la cantidad de gente antes de saber si el hotel entraba en el
-          presupuesto.
+          Desde el 22 de septiembre de 2026 el precio grande es POR PERSONA,
+          no el total de la estadía. Es el patrón de cualquier promoción de
+          hotel: la cifra que engancha es «por persona, habitación doble», y
+          el total completo queda como letra chica de referencia — acá abajo,
+          junto al botón. Antes era al revés y la parrilla se leía como una
+          lista de totales, que es justo lo que un folleto de hotel no hace.
 
-          Debajo va de qué tarifa sale, y no es adorno: en Backpackers lo más
-          barato para dos son dos camarotes en dormitorio compartido, así que
-          la cifra sin esa línea haría parecer que el hotel entero cuesta eso.
+          «Habitación doble» es fija en las diez fichas a propósito: no
+          describe la tarifa real de cada hotel —eso sigue en la línea de
+          abajo—, es la aclaración estándar de que el precio por persona
+          asume que la habitación se comparte entre dos.
         */}
         <p className="mt-4 flex items-baseline gap-2">
           <span className="font-display text-[1.875rem] leading-none text-brass tabular-nums">
-            {dosPersonas === null ? "—" : dinero(dosPersonas.total)}
+            {dosPersonas === null ? "—" : dinero(dosPersonas.total / 2)}
           </span>
           <span className="text-xs leading-none text-mute">
-            4 noches · 2 personas
+            por persona · Habitación doble
           </span>
-          {/*
-            Cuatro de los diez hoteles cotizan sin impuestos. Sin esta marca la
-            parrilla muestra diez cifras que parecen equivalentes y cuatro de
-            ellas suben al pagar. Va en tono neutro, no de alarma: el hotel no
-            hace nada malo, solo cotiza distinto.
-          */}
-          {hotel.impuestos === "aparte" && (
-            <span className="text-xs leading-none text-mute">+ impuestos</span>
-          )}
         </p>
 
+        {/*
+          De qué tarifa sale, y no es adorno: en Backpackers lo más barato
+          para dos son dos camarotes en dormitorio compartido, así que sin
+          esta línea el precio de arriba parecería el de una habitación doble
+          de verdad. Esta es la que dice la tarifa real; la de arriba solo
+          fija la ocupación.
+        */}
         {dosPersonas && (
           <p className="mt-1.5 text-xs text-mute">
             En {dosPersonas.tarifa.nombre.toLowerCase()}
@@ -144,28 +162,34 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
         </p>
 
         <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-line pt-5">
-          <Spec denso icono={<Personas className={icono} />}>
-            {hotel.capacidad === null ? "Sin dato" : `${hotel.capacidad} pers.`}
-          </Spec>
+          {hotel.capacidad !== null && (
+            <Spec denso icono={<Personas className={icono} />}>
+              {hotel.capacidad} pers.
+            </Spec>
+          )}
           <Spec denso icono={<Taza className={icono} />}>
             {hotel.caracteristicas.desayunoIncluido ? "Desayuno" : "$6 aparte"}
           </Spec>
-          <Spec denso icono={<Clima className={icono} />}>
-            {textoAire[hotel.caracteristicas.aire ?? "null"]}
-          </Spec>
+          {hotel.caracteristicas.aire !== null && (
+            <Spec denso icono={<Clima className={icono} />}>
+              {textoAire[hotel.caracteristicas.aire]}
+            </Spec>
+          )}
         </ul>
 
         {/*
-          La mitad de la canasta de arriba, no un cálculo aparte. Antes acá iba
-          `costoEstadia` —las 4 noches de UNA persona con la tarifa más barata—,
-          que era un segundo total de 4 noches al lado del primero: dos cifras
-          del mismo período, con bases distintas, en la misma ficha.
+          El total de la estadía, que hasta el 22 de septiembre de 2026 era el
+          precio grande de arriba. Sigue siendo el doble exacto del de arriba
+          —no un cálculo aparte, como sí lo era `costoEstadia`, que multiplicaba
+          por UNA persona y quedaba como un segundo total con otra base—, pero
+          ahora es la letra chica: la cifra que engancha es la de arriba, esta
+          es la que confirma cuánto sale la cuenta completa.
         */}
         <div className="mt-auto flex items-end justify-between gap-4 border-t border-line pt-5">
           <p className="text-xs text-mute">
-            Por persona
+            4 noches · 2 personas
             <span className="ml-1.5 font-display text-base text-ink tabular-nums">
-              {dosPersonas === null ? "—" : dinero(dosPersonas.total / 2)}
+              {dosPersonas === null ? "—" : dinero(dosPersonas.total)}
             </span>
           </p>
           <Link

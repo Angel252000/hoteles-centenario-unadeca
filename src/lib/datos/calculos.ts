@@ -16,6 +16,44 @@ export function totalTarifa(habitacion: Habitacion): number {
 }
 
 /**
+ * Las dos cifras que toda tarifa muestra desde el 22 de septiembre de 2026:
+ * cuanto cuesta por noche y cuanto por las cuatro noches.
+ *
+ * Antes cada hotel se leia en su propia unidad y no habia forma de comparar
+ * de un vistazo: seis cotizan por habitacion y cuatro por persona.
+ *
+ * Que hace con cada una:
+ *
+ * - `habitacion-noche`: la habitacion tal como el hotel la vende. No se
+ *   multiplica nada. Una sencilla cuesta lo que cuesta una sencilla; decir
+ *   que «por habitacion» son dos sencillas seria mentir sobre lo que se
+ *   reserva.
+ * - `persona-noche`: se muestra para DOS personas —dos veces la tarifa—,
+ *   que es la canasta con la que el sitio compara hoteles desde §11. Un
+ *   precio por cabeza al lado del total de una habitacion no se puede leer.
+ *
+ * La etiqueta viaja con las cifras a proposito: un numero sin decir a que
+ * ocupacion corresponde es justo el error que esto viene a arreglar.
+ */
+export function tarifaMostrada(habitacion: Habitacion): {
+  porNoche: number;
+  total: number;
+  etiqueta: string;
+} {
+  const veces = habitacion.unidad === "persona-noche" ? 2 : 1;
+  const porNoche = habitacion.precio * veces;
+
+  return {
+    porNoche,
+    total: porNoche * evento.noches,
+    etiqueta:
+      habitacion.unidad === "persona-noche"
+        ? `2 personas, ${evento.noches} noches`
+        : `la habitación, ${evento.noches} noches`,
+  };
+}
+
+/**
  * Lo más barato que sale alojar a dos personas toda la estadía.
  *
  * Es la canasta con la que se comparan los hoteles entre sí, y existe porque

@@ -81,9 +81,9 @@ export function Consultas() {
             </h2>
             <p className="prosa mt-6 text-graphite">
               Las tarifas de esta página son las que cada hotel cotizó para el{" "}
-              {evento.nombre} y algunas están sujetas a impuestos o a
-              disponibilidad. Si necesitás confirmar un precio, saber qué
-              incluye o cómo reservar, escribí o llamá y te respondemos.
+              {evento.nombre} y están sujetas a disponibilidad. Si necesitás
+              confirmar un precio, saber qué incluye o cómo reservar, escribí o
+              llamá y te respondemos.
             </p>
 
             <ul className="mt-10 border-t border-line">

@@ -95,7 +95,11 @@ export const consultas: {
   // propios. Reemplazan a `linguistika@unadeca.net` y a los dos números que
   // se usaron hasta esa fecha —Secretaría y el contacto de hospedaje externo—,
   // que ya no se muestran.
-  correo: "hospedaje@unadeca.net",
+  //
+  // El 21 de septiembre de 2026 el correo pasa de `hospedaje@unadeca.net` a
+  // `centenario@unadeca.net`. Es el unico correo de UNADECA que publica el
+  // sitio: los de las fichas son los de cada hotel.
+  correo: "centenario@unadeca.net",
   telefonos: [{ numero: "6331 6083", quien: "Hospedaje" }],
 };
 
@@ -140,6 +144,7 @@ export const hoteles: Hotel[] = [
     clima: "Solo ventiladores, sin aire acondicionado",
     acceso: "Gradas, sin elevador",
     servicios: ["Camas individuales y matrimoniales", "Posible transporte"],
+    lleno: true,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "no",
@@ -195,6 +200,7 @@ export const hoteles: Hotel[] = [
       "Camarotes y camas normales",
       "Privadas sencillas, triples y cuádruples",
     ],
+    lleno: false,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
@@ -270,6 +276,7 @@ export const hoteles: Hotel[] = [
       "Camas individuales y matrimoniales",
       "Restaurante propio",
     ],
+    lleno: false,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
@@ -328,6 +335,7 @@ export const hoteles: Hotel[] = [
       "Baño privado en todas",
       "Salón para 30 personas",
     ],
+    lleno: false,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "parcial",
@@ -392,6 +400,7 @@ export const hoteles: Hotel[] = [
       "Parqueo para 4–5 carros",
       "Área de descanso y piscina pequeña",
     ],
+    lleno: false,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "si",
@@ -481,11 +490,12 @@ export const hoteles: Hotel[] = [
     nivel: "premium",
     capacidad: 39,
     resumen:
-      "Casona colonial restaurada, con patio de fuente y sala de estar. La opción más cara del documento y la de mejor acabado.",
+      "Casona colonial restaurada, con patio de fuente y sala de estar.",
     desayuno: "Típico, de 6:00 a 9:00 a.m.",
     clima: "Ventilador o aire acondicionado, según la habitación",
     acceso: "Gradas, sin elevador",
     servicios: ["Parqueo para 4 vehículos", "Patio interior y sala de estar"],
+    lleno: false,
     impuestos: "incluidos",
     caracteristicas: {
       aire: "parcial",
@@ -558,9 +568,9 @@ export const hoteles: Hotel[] = [
     nivel: "premium",
     capacidad: null,
     resumen:
-      "Tarifas por habitación con desayuno buffet, almuerzo y transporte al aeropuerto las 24 horas. Único hotel que cotiza sin impuestos incluidos.",
+      "Tarifas por habitación con desayuno buffet y transporte al aeropuerto las 24 horas.",
     desayuno:
-      "Desayuno buffet (6:00 a. m.–10:00 a. m.) y almuerzo a la hora que se indique, incluidos en la tarifa",
+      "Desayuno buffet (6:00 a. m.–10:00 a. m.), incluido en la tarifa",
     clima: null,
     acceso: null,
     servicios: [
@@ -571,9 +581,8 @@ export const hoteles: Hotel[] = [
       "Servicio de fotocopiado y fax nacional e internacional",
       "Cajas de seguridad",
     ],
+    lleno: false,
     impuestos: "aparte",
-    impuestosNota:
-      "La hoja de tarifas dice «mas impuestos», sin detallar el porcentaje",
     caracteristicas: {
       // El correo no menciona el clima ni el elevador, y las fotos no alcanzan
       // para afirmarlo: queda sin dato hasta que el hotel lo confirme.
@@ -608,7 +617,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 1,
         detalle:
-          "1 adulto · tarifa 17/8/2026–31/7/2027 · $135,60 del 1 al 19/7/2027 · más impuestos",
+          "1 adulto · tarifa 17/8/2026–31/7/2027 · $135,60 del 1 al 19/7/2027",
       },
       {
         nombre: "Doble",
@@ -616,7 +625,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 2,
         detalle:
-          "2 adultos · tarifa 17/8/2026–31/7/2027 · $135,60 del 1 al 19/7/2027 · más impuestos",
+          "2 adultos · tarifa 17/8/2026–31/7/2027 · $135,60 del 1 al 19/7/2027",
       },
       {
         nombre: "Triple",
@@ -624,7 +633,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 3,
         detalle:
-          "3 adultos · tarifa 17/8/2026–31/7/2027 · $149,90 del 1 al 19/7/2027 · más impuestos",
+          "3 adultos · tarifa 17/8/2026–31/7/2027 · $149,90 del 1 al 19/7/2027",
       },
       {
         nombre: "Cuádruple",
@@ -633,7 +642,7 @@ export const hoteles: Hotel[] = [
         personas: 4,
         camas: "Dos camas full size",
         detalle:
-          "4 adultos · tarifa 17/8/2026–31/7/2027 · $158,20 del 1 al 19/7/2027 · más impuestos",
+          "4 adultos · tarifa 17/8/2026–31/7/2027 · $158,20 del 1 al 19/7/2027",
       },
     ],
     // La piscina va primera: es la única foto que muestra el edificio entero.
@@ -669,8 +678,6 @@ export const hoteles: Hotel[] = [
     nombre: "Hilton Garden Inn San José Airport City Mall",
     nivel: "premium",
     capacidad: null,
-    capacidadNota:
-      "El correo no dice cuántas habitaciones tiene; las 250 personas del salón Quetzal son capacidad de evento, no de hospedaje",
     resumen:
       "A 900 metros del aeropuerto y conectado a City Mall Alajuela. Desayuno, traslados, piscina climatizada y piso de eventos para 250 personas.",
     desayuno: "Desayuno buffet, incluido en la tarifa",
@@ -687,9 +694,20 @@ export const hoteles: Hotel[] = [
       "Más de 3.000 espacios de parqueo techado gratuito, con carga para vehículos eléctricos",
       "Restaurante con chef en sitio",
     ],
-    impuestos: "aparte",
-    impuestosNota:
-      "Cotiza «+imp», sin detallar el porcentaje",
+    lleno: false,
+    /*
+      Desde el 21 de septiembre de 2026 los precios de abajo YA TRAEN el 13%.
+
+      El correo del hotel cotiza «+imp» sin decir el porcentaje; el 13% es el
+      IVA de Costa Rica y es el mismo que el Courtyard fija por escrito en su
+      convenio. Se aplico sobre cada tarifa base —125, 145 y 195— y sobre los
+      $10 de la persona adicional, para que la cifra que se compara en la
+      parrilla sea la que se paga.
+
+      Queda por confirmar con el hotel que 13% sea todo el impuesto: esta
+      anotado en los pendientes.
+    */
+    impuestos: "incluidos",
     caracteristicas: {
       // El correo detalla mucho, pero nunca menciona clima ni elevador.
       aire: null,
@@ -708,16 +726,18 @@ export const hoteles: Hotel[] = [
     habitaciones: [
       {
         nombre: "Standard",
-        precio: 125,
+        // 125 x 1,13. La persona adicional pasa de $10 a $11,30.
+        precio: 141.25,
         unidad: "habitacion-noche",
         personas: 2,
         camas: "Dos camas full",
         detalle:
-          "Ocupación sencilla o doble · persona adicional $10, hasta 4 · más impuestos",
+          "Ocupación sencilla o doble · persona adicional $11,30, hasta 4",
       },
       {
         nombre: "Standard con 4 personas",
-        precio: 145,
+        // 145 x 1,13, o lo mismo: 141,25 + dos personas a 11,30.
+        precio: 163.85,
         unidad: "habitacion-noche",
         personas: 4,
         /*
@@ -729,15 +749,16 @@ export const hoteles: Hotel[] = [
           misma línea del correo que la Standard.
         */
         camas: "Dos camas full",
-        detalle: "$125 más dos personas adicionales a $10 · más impuestos",
+        detalle: "$141,25 más dos personas adicionales a $11,30",
       },
       {
         nombre: "Suite",
-        precio: 195,
+        // 195 x 1,13.
+        precio: 220.35,
         unidad: "habitacion-noche",
         personas: 2,
         detalle:
-          "Ocupación sencilla o doble · persona adicional $10 · más impuestos",
+          "Ocupación sencilla o doble · persona adicional $11,30",
       },
     ],
     /*
@@ -770,7 +791,7 @@ export const hoteles: Hotel[] = [
     },
     pendientes: [
       "Fotos oficiales de la sede: pedirlas a SJOAC_Reservations@hilton.com. Las primeras que llegaron eran de otra sede y se retiraron",
-      "Porcentaje de impuestos: cotiza «+imp» sin detallarlo",
+      "Confirmar que el 13% aplicado a sus tarifas sea todo el impuesto: el correo cotiza «+imp» sin detallar el porcentaje, y el 13% se tomo del IVA de Costa Rica y del convenio del Courtyard",
       "Cantidad de habitaciones: el correo no la da; la cadena publica 149, sin confirmar por el hotel",
       "Aire acondicionado y elevador: el correo no los menciona, aunque la cadena sí anuncia A/C",
       "Si la Suite también admite hasta 4 personas: el tope de 4 solo se indica para la Standard",
@@ -802,9 +823,8 @@ export const hoteles: Hotel[] = [
       "Espacio para eventos, reuniones y celebraciones",
       "Hotel de no fumado",
     ],
+    lleno: false,
     impuestos: "aparte",
-    impuestosNota:
-      "13% segun el convenio firmado, sin confirmar sobre este precio",
     caracteristicas: {
       // El convenio detalla servicios pero nunca menciona clima ni elevador.
       aire: null,
@@ -831,7 +851,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 1,
         detalle:
-          "Incluye 1 desayuno · 13% de impuestos según el convenio firmado, sin confirmar sobre este precio",
+          "Incluye 1 desayuno",
       },
       {
         nombre: "Estándar doble",
@@ -839,7 +859,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 2,
         detalle:
-          "Incluye 2 desayunos · 13% de impuestos según el convenio firmado, sin confirmar sobre este precio",
+          "Incluye 2 desayunos",
       },
     ],
     // Las de más resolución primero: la 01 es la que se muestra grande.
@@ -903,9 +923,8 @@ export const hoteles: Hotel[] = [
       "Espacio para eventos, reuniones y celebraciones",
       "Hotel de no fumado",
     ],
+    lleno: false,
     impuestos: "aparte",
-    impuestosNota:
-      "13% segun el convenio firmado, sin confirmar sobre este precio",
     caracteristicas: {
       aire: null,
       elevador: null,
@@ -934,7 +953,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 1,
         detalle:
-          "Incluye 1 desayuno · 13% de impuestos según el convenio firmado, sin confirmar sobre este precio",
+          "Incluye 1 desayuno",
       },
       {
         nombre: "Estándar doble",
@@ -942,7 +961,7 @@ export const hoteles: Hotel[] = [
         unidad: "habitacion-noche",
         personas: 2,
         detalle:
-          "Incluye 2 desayunos · mismo precio que la sencilla · 13% de impuestos según el convenio firmado, sin confirmar sobre este precio",
+          "Incluye 2 desayunos · mismo precio que la sencilla",
       },
     ],
     // Las de más resolución primero: la 01 es la que se muestra grande.

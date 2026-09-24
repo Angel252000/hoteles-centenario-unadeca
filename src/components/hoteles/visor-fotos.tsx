@@ -4,7 +4,7 @@ import { Foto } from "@/components/ui/foto";
 import type { Imagen } from "@/lib/datos";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FlechaIzquierda, FlechaSerie } from "@/components/ui/iconos";
+import { FlechaIzquierda } from "@/components/ui/iconos";
 
 /**
  * El visor a pantalla completa de la galería.
@@ -21,6 +21,7 @@ import { FlechaIzquierda, FlechaSerie } from "@/components/ui/iconos";
 export function VisorFotos({
   fotos,
   hotel,
+  lleno = false,
   indiceInicial,
   precargar,
   alPedirCierre,
@@ -28,6 +29,12 @@ export function VisorFotos({
 }: {
   fotos: Imagen[];
   hotel: string;
+  /**
+   * Repite el aviso de «hotel lleno» dentro del visor. A pantalla completa la
+   * foto tapa la banda del mosaico, y quien llega mirando las habitaciones de
+   * un hotel sin lugar tiene que seguir sabiendolo. Ver §20 de MEJORAS.md.
+   */
+  lleno?: boolean;
   /** La foto que se tocó en el mosaico. */
   indiceInicial: number;
   /** Si adelantar la descarga de la foto siguiente. Lo decide `Galeria`. */
@@ -45,6 +52,7 @@ export function VisorFotos({
   const cerrarRef = useRef<HTMLButtonElement>(null);
   const dialogoRef = useRef<HTMLDivElement>(null);
   const inicioTactilRef = useRef<number | null>(null);
+  const [arrastrando, setArrastrando] = useState(false);
 
   const total = fotos.length;
   const ir = useCallback(
@@ -53,19 +61,28 @@ export function VisorFotos({
   );
 
   /**
-   * Deslizar para cambiar de foto. En un teléfono es el gesto que la gente
-   * prueba antes que los botones.
+   * Arrastrar para cambiar de foto — el unico control de paso que queda.
+   *
+   * Eventos `Pointer` y no `Touch`: cubren dedo, mouse y lapiz con el mismo
+   * codigo. Desde §23 no hay botones de «Anterior» y «Siguiente», asi que en
+   * escritorio esto es lo que reemplaza al clic, y por eso el cursor pasa a
+   * `grab`: sin esa senal nadie con mouse adivina que ahi se arrastra.
    */
-  const alTocar = (e: React.TouchEvent) => {
-    inicioTactilRef.current = e.touches[0]?.clientX ?? null;
+  const alEmpezarArrastre = (e: React.PointerEvent) => {
+    inicioTactilRef.current = e.clientX;
+    setArrastrando(true);
+    // Capturar el puntero: si el dedo o el mouse salen de la foto a mitad del
+    // gesto, el `pointerup` llega igual y el arrastre no se queda colgado.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
-  const alSoltar = (e: React.TouchEvent) => {
+  const alTerminarArrastre = (e: React.PointerEvent) => {
     const inicio = inicioTactilRef.current;
     inicioTactilRef.current = null;
+    setArrastrando(false);
     if (inicio === null) return;
 
-    const recorrido = (e.changedTouches[0]?.clientX ?? inicio) - inicio;
+    const recorrido = e.clientX - inicio;
     // Menos de 50px suele ser un toque con la mano temblando, no un gesto.
     if (Math.abs(recorrido) < 50) return;
     ir(recorrido < 0 ? 1 : -1);
@@ -190,14 +207,19 @@ export function VisorFotos({
       role="dialog"
       aria-modal="true"
       aria-label={`Fotos de ${hotel}`}
-      className="fixed inset-0 z-50 flex flex-col bg-ink/97"
+      className="fixed inset-0 z-50 flex flex-col bg-[#0d0d0f]/98"
     >
       <div className="flex items-center justify-between border-b border-line-invert px-5 py-4">
-        <p className="text-sm text-mute-invert tabular-nums">
-          {indice + 1} / {total}
-          <span className="ml-3 hidden text-mute-invert/70 sm:inline">
-            {hotel}
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-mute-invert tabular-nums">
+          <span>
+            {indice + 1} / {total}
           </span>
+          <span className="hidden text-mute-invert/70 sm:inline">{hotel}</span>
+          {lleno && (
+            <span className="border border-bone/40 px-2 py-0.5 text-[0.65rem] font-semibold tracking-[0.16em] text-bone uppercase">
+              Hotel lleno
+            </span>
+          )}
         </p>
         {/*
           Dice «Volver», no «Cerrar». La salida ya existía —este botón,
@@ -221,9 +243,15 @@ export function VisorFotos({
       </div>
 
       <div
-        onTouchStart={alTocar}
-        onTouchEnd={alSoltar}
-        className="relative flex flex-1 items-center justify-center p-4 sm:p-8"
+        onPointerDown={alEmpezarArrastre}
+        onPointerUp={alTerminarArrastre}
+        onPointerCancel={() => {
+          inicioTactilRef.current = null;
+          setArrastrando(false);
+        }}
+        className={`relative flex flex-1 touch-pan-y items-center justify-center p-4 select-none sm:p-8 ${
+          arrastrando ? "cursor-grabbing" : "cursor-grab"
+        }`}
       >
         <Foto
           key={actual.src}
@@ -261,31 +289,15 @@ export function VisorFotos({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-4 border-t border-line-invert px-5 py-4">
-        <button
-          type="button"
-          onClick={() => ir(-1)}
-          aria-label="Foto anterior"
-          className="flex cursor-pointer items-center gap-2 border border-line-invert px-4 py-3 text-sm text-bone transition-colors duration-200 hover:bg-bone hover:text-ink"
-        >
-          <FlechaSerie hacia="izquierda" />
-          <span className="hidden sm:inline">Anterior</span>
-        </button>
-
-        <p className="max-w-[46ch] text-center text-sm text-mute-invert">
-          {actual.alt}
-        </p>
-
-        <button
-          type="button"
-          onClick={() => ir(1)}
-          aria-label="Foto siguiente"
-          className="flex cursor-pointer items-center gap-2 border border-line-invert px-4 py-3 text-sm text-bone transition-colors duration-200 hover:bg-bone hover:text-ink"
-        >
-          <span className="hidden sm:inline">Siguiente</span>
-          <FlechaSerie hacia="derecha" />
-        </button>
-      </div>
+      {/*
+        Sin barra de botones desde §23. Quedaban «Anterior» y «Siguiente»
+        enmarcados, del mismo peso visual que «Volver», rodeando la foto de
+        cromo justo cuando alguien esta mirando la habitacion. El paso lo hace
+        el arrastre, y el teclado sigue igual: Escape cierra, ← → cambian.
+      */}
+      <p className="mx-auto max-w-[46ch] px-5 pb-6 text-center text-sm text-mute-invert">
+        {actual.alt}
+      </p>
     </div>,
     document.body,
   );

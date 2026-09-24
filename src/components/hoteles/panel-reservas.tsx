@@ -34,9 +34,6 @@ export function PanelReservas({ hotel }: { hotel: Hotel }) {
         <p className="mt-1.5 font-display text-4xl text-brass tabular-nums">
           {dosPersonas === null ? "—" : dinero(dosPersonas.total / 2)}
         </p>
-        {hotel.impuestos === "aparte" && (
-          <p className="mt-1 text-xs text-mute">+ impuestos</p>
-        )}
         <p className="mt-1.5 text-xs leading-relaxed text-mute">
           Por persona, compartiendo de a dos con la opción más barata del
           hotel. La tabla de tarifas dice cuánto cambia si la habitación se

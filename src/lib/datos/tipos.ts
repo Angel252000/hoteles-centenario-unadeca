@@ -149,6 +149,26 @@ export type Hotel = {
   acceso: string | null;
   servicios: string[];
   /**
+   * Direccion de calle, como la escribe el hotel.
+   *
+   * Opcional porque NO se inventa: ninguna de las cotizaciones la traia, y
+   * poner una direccion equivocada de un negocio real es peor que no ponerla.
+   * Mientras este vacia, la ficha muestra «Alajuela, Costa Rica» y el enlace
+   * al mapa busca por nombre, que es exacto sin afirmar una calle. Ver §26 de
+   * `docs/MEJORAS.md`.
+   */
+  direccion?: string;
+  /**
+   * Si el hotel ya no tiene lugar para el evento.
+   *
+   * Obligatorio y sin `?`, por la misma razon que `impuestos`: un hotel nuevo
+   * que entrara sin decidir su estado se mostraria como disponible por
+   * omision, y ese es el error caro. El hotel lleno NO se saca de la pagina
+   * —su tarifa sigue siendo referencia y quien lo tenia elegido merece saber
+   * por que—: se marca con una banda sobre la foto. Ver §20 de MEJORAS.md.
+   */
+  lleno: boolean;
+  /**
    * Si la tarifa publicada ya trae impuestos.
    *
    * Obligatorio a proposito, sin `?`: cuatro hoteles cotizan sin ellos y seis
@@ -157,12 +177,21 @@ export type Hotel = {
    * decidiera y su precio se leeria como neto sin serlo.
    *
    * `null` = el hotel no lo informo. No es lo mismo que `"incluidos"`.
+   *
+   * DESDE §24 NINGUN COMPONENTE LO USA: la pagina es promocional y no menciona
+   * impuestos en ningun lado. El campo se conserva —como `medios.video`— para
+   * que el dato no se pierda y para que reponer la marca sea una linea. Ver
+   * §24 de `docs/MEJORAS.md`.
    */
   impuestos: "incluidos" | "aparte" | null;
   /**
    * Detalle del impuesto, cuando el hotel lo dio. Solo dos de los cuatro que
    * cotizan aparte dicen el porcentaje; los otros escriben «mas impuestos» sin
    * numero. Opcional a proposito: obligar a rellenarlo invitaria a inventarlo.
+   *
+   * Sin uso en la interfaz desde §24, igual que `impuestos`. Los textos que
+   * habia cargados citaban la fuente («la hoja de tarifas dice…») y por eso se
+   * vaciaron; el campo queda para un texto que se pueda publicar.
    */
   impuestosNota?: string;
   caracteristicas: Caracteristicas;

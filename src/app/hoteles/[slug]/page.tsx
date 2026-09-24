@@ -79,7 +79,11 @@ export default async function HotelPage({
 
         {/* Galería a lo ancho */}
         <div className="mx-auto max-w-[92rem] px-3 pt-4 sm:px-4">
-          <Galeria fotos={hotel.imagenes} hotel={hotel.nombre} />
+          <Galeria
+            fotos={hotel.imagenes}
+            hotel={hotel.nombre}
+            lleno={hotel.lleno}
+          />
         </div>
 
         <div className="mx-auto max-w-[92rem] px-5 py-10 sm:px-8 sm:py-12">
